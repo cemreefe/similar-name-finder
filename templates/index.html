@@ -12,7 +12,11 @@
         <form action="/find_similar_names" method="POST">
             <label for="name">Enter Name:</label>
             <input type="text" id="name" name="name" required>
-            <button type="submit">Find Similar Names</button>
+            <button type="submit" name="search_type" value="english-mp">Search Similar Names (English input, Metaphone)</button>
+            <button type="submit" name="search_type" value="english-ipa">Search Similar Names (English input, IPA LD)</button>
+            <button type="submit" name="search_type" value="english-mixedapproach">Search Similar Names (English input, IPA LD x Metaphone)</button>
+            <button type="submit" name="search_type" value="ipa">Search Similar Names (IPA input, IPA LD distance)</button>
+            <button type="submit" name="search_type" value="mp">Search Similar Names (Metaphone input)</button>
         </form>
     </div>
 </body>

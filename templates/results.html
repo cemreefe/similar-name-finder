@@ -13,15 +13,21 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Gender</th>
                     <th>Phonetic Transcription</th>
+                    <th>IPA Transcription</th>
+                    <th>IPA Alternatives</th>
                     <th>Similarity Score</th>
                 </tr>
             </thead>
             <tbody>
-                {% for name, phonetic_repr, similarity_score in similar_names %}
+                {% for name, gender, phonetic_repr, ipa_transcription, ipa_alternatives, similarity_score in similar_names %}
                     <tr>
                         <td>{{ name }}</td>
+                        <td>{{ gender }}</td>
                         <td>{{ phonetic_repr }}</td>
+                        <td>{{ ipa_transcription }}</td>
+                        <td>{{ ipa_alternatives }}</td>
                         <td>{{ similarity_score }}</td>
                     </tr>
                 {% endfor %}
