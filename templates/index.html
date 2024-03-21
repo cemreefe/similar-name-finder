@@ -12,13 +12,57 @@
         <form action="/find_similar_names" method="POST">
             <label for="name">Enter Name:</label>
             <input type="text" id="name" name="name" required>
-            <button type="submit" name="search_type" value="english-mp">Search Similar Names (English input, Metaphone)</button>
-            <button type="submit" name="search_type" value="english-ipa">Search Similar Names (English input, IPA LD)</button>
-            <button type="submit" name="search_type" value="english-mixedapproach">Search Similar Names (English input, IPA LD x Metaphone)</button>
-            <button type="submit" name="search_type" value="ipa">Search Similar Names (IPA input, IPA LD distance)</button>
-            <button type="submit" name="search_type" value="mp">Search Similar Names (Metaphone input)</button>
+            
+            <label for="input_type">Select Input Type:</label>
+            <select id="input_type" name="input_type">
+                <option value="english">English Name</option>
+                <option value="turkish">Turkish Name</option>
+                <option value="ipa">IPA Transcription</option>
+                <option value="mp">Metaphone</option>
+            </select>
+
+            <label for="distance_function">Select Distance Function:</label>
+            <select id="distance_function" name="distance_function">
+                <option value="mp">Metaphone Edit Distance</option>
+                <option value="ipa">IPA Edit Distance</option>
+                <!-- <option value="hybrid">Hybrid</option> -->
+            </select>
+
+            <label for="gender">Select Gender Preference:</label>
+            <select id="gender" name="gender">
+                <option value="">No Preference</option>
+                <option value="boy">Boy</option>
+                <option value="girl">Girl</option>
+            </select>
+
+            <button type="submit">Search Similar Names</button>
         </form>
     </div>
+
+    <script>
+    document.getElementById('input_type').addEventListener('change', function() {
+        var inputType = this.value;
+        var distanceFunctionDropdown = document.getElementById('distance_function');
+        var distanceOptions = distanceFunctionDropdown.getElementsByTagName('option');
+
+        // Enable all options initially and deselect all options
+        for (var i = 0; i < distanceOptions.length; i++) {
+            distanceOptions[i].disabled = false;
+            distanceOptions[i].selected = false;
+        }
+
+        // If input type is Metaphone, disable IPA options and select the next available option
+        if (inputType === 'mp') {
+            distanceOptions[0].disabled = true; // IPA Edit Distance
+            distanceOptions[1].selected = true; // Select Metaphone Edit Distance
+        }
+        // If input type is IPA, disable Metaphone options and select the next available option
+        else if (inputType === 'ipa') {
+            distanceOptions[1].disabled = true; // Metaphone Edit Distance
+            distanceOptions[2].disabled = true; // Hybrid
+            distanceOptions[0].selected = true; // Select IPA Edit Distance
+        }
+    });
+    </script>
 </body>
 </html>
-
