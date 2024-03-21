@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Similar Names</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Find Similar Names</h1>
+        <form action="/find_similar_names" method="POST">
+            <label for="name">Enter Name:</label>
+            <input type="text" id="name" name="name" required>
+            <button type="submit">Find Similar Names</button>
+        </form>
+    </div>
+</body>
+</html>
+

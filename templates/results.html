@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Similar Names</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Similar Names to {{ input_name }}</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phonetic Transcription</th>
+                    <th>Similarity Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for name, phonetic_repr, similarity_score in similar_names %}
+                    <tr>
+                        <td>{{ name }}</td>
+                        <td>{{ phonetic_repr }}</td>
+                        <td>{{ similarity_score }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

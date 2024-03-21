@@ -1,0 +1,4 @@
+Flask==3.0.0
+nltk==3.6.5
+metaphone==0.6
+
