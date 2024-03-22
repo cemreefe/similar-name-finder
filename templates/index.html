@@ -9,9 +9,9 @@
 <body>
     <div class="container">
         <h1>Find Similar Names</h1>
-        <form action="/find_similar_names" method="POST">
+        <form action="/find" method="POST">
             <label for="name">Enter Name:</label>
-            <input type="text" id="name" name="name" required>
+            <input type="text" id="name" name="name" required value='{% if input_fields %}{{ input_fields[0] }}{% endif %}'>
             
             <label for="input_type">Select Input Type:</label>
             <select id="input_type" name="input_type">
@@ -37,6 +37,53 @@
 
             <button type="submit">Search Similar Names</button>
         </form>
+
+        {% if input_fields %}
+        <div id='results'>
+            <h1>Similar Names to '{{ input_name }}'</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Input name</th>
+                        <th>Input IPA</th>
+                        <th>Input metaphone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                        <tr>
+                            <td>{{ input_fields[0] }}</td>
+                            <td>{{ input_fields[1] }}</td>
+                            <td>{{ input_fields[2] }}</td>
+                        </tr>
+                </tbody>
+            </table>
+            <hr>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Phonetic Transcription</th>
+                        <th>IPA Transcription</th>
+                        <th>IPA Alternatives</th>
+                        <th>Similarity Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, gender, phonetic_repr, ipa_transcription, ipa_alternatives, similarity_score in similar_names %}
+                        <tr>
+                            <td>{{ name }}</td>
+                            <td>{{ gender }}</td>
+                            <td>{{ phonetic_repr }}</td>
+                            <td>{{ ipa_transcription }}</td>
+                            <td>{{ ipa_alternatives }}</td>
+                            <td>{{ '%0.2f' % similarity_score }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
     </div>
 
     <script>
