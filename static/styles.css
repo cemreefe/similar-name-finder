@@ -1,3 +1,7 @@
+body {
+    font-family: sans-serif
+}
+
 .container {
     max-width: 600px;
     margin: 0 auto;
@@ -18,14 +22,21 @@ form {
 }
 
 label {
-    margin-bottom: 10px;
+    margin-bottom: 0.5em;
+    margin-top: 0.5em;
 }
 
 input[type="text"] {
-    padding: 8px;
+    padding: 0.5em;
     margin-bottom: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    text-align: center;
+    font-size:1em;
+}
+
+select {
+    padding:0.5em;
 }
 
 button {
@@ -57,7 +68,7 @@ table {
 
 td, th {
     padding-top:1em;
-    padding-left:1em;
+    padding-left:0.5em;
 }
 
 th {
@@ -67,4 +78,8 @@ th {
 button {
     margin: 1em;
     min-width: 10em;
+}
+
+input, select {
+    min-width: 15em;
 }
