@@ -13,7 +13,7 @@ This Flask web application helps users find similar names based on phonetic simi
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your_username/similar-names-finder.git
+   git clone https://github.com/cemreefe/similar-names-finder.git
    ```
 
 2. Navigate to the project directory:
