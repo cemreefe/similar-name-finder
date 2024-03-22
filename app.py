@@ -16,13 +16,14 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
 
     # Define separate functions for different cases
     def calculate_similarity_ipa(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
+        if input_mp and name_phonetic_repr:
+            return distance_function(input_ipa, name_ipa) + distance_function(input_mp, name_phonetic_repr)/100
         return distance_function(input_ipa, name_ipa)
 
     def calculate_similarity_metaphone(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
+        if input_ipa and name_ipa:
+            return distance_function(input_mp, name_phonetic_repr) + distance_function(input_ipa, name_ipa)/100
         return distance_function(input_mp, name_phonetic_repr)
-
-    def calculate_similarity_hybrid(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-        return distance_function(input_mp, name_phonetic_repr) * 100 + distance_function(input_ipa, name_ipa)
 
     def calculate_similarity_error(*args):
         return 404
@@ -53,8 +54,6 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
             calculate_similarity = calculate_similarity_metaphone
         elif distance_dimension == 'ipa':
             calculate_similarity = calculate_similarity_ipa
-        elif distance_dimension == 'hybrid':
-            calculate_similarity = calculate_similarity_hybrid
         else:
             calculate_similarity = calculate_similarity_error
     elif input_type == 'ipa' and distance_dimension == 'ipa':

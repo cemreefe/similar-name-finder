@@ -25,7 +25,6 @@
             <select id="distance_dimension" name="distance_dimension">
                 <option value="mp">Metaphone Edit Distance</option>
                 <option value="ipa">IPA Edit Distance</option>
-                <!-- <option value="hybrid">Hybrid</option> -->
             </select>
 
             <label for="gender">Select Gender Preference:</label>
@@ -107,7 +106,6 @@
         // If input type is IPA, disable Metaphone options and select the next available option
         else if (inputType === 'ipa') {
             distanceOptions[1].disabled = true; // Metaphone Edit Distance
-            distanceOptions[2].disabled = true; // Hybrid
             distanceOptions[0].selected = true; // Select IPA Edit Distance
         }
     });
