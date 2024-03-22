@@ -5,21 +5,24 @@ from nltk import edit_distance
 from epitran import Epitran
 import helpers.metaphone_helper as mhelp
 from eng_to_ipa import ipa_list
+from jellyfish import jaro_winkler_similarity
 
+# distance_function = edit_distance
+distance_function = lambda x, y: 1 - jaro_winkler_similarity(x, y)
 
 app = Flask(__name__)
 
-def get_similar_names(input_name, input_type, distance_function, gender):
+def get_similar_names(input_name, input_type, distance_dimension, gender):
 
     # Define separate functions for different cases
     def calculate_similarity_ipa(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-        return edit_distance(input_ipa, name_ipa)
+        return distance_function(input_ipa, name_ipa)
 
     def calculate_similarity_metaphone(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-        return edit_distance(input_mp, name_phonetic_repr)
+        return distance_function(input_mp, name_phonetic_repr)
 
     def calculate_similarity_hybrid(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-        return edit_distance(input_mp, name_phonetic_repr) * 100 + edit_distance(input_ipa, name_ipa)
+        return distance_function(input_mp, name_phonetic_repr) * 100 + distance_function(input_ipa, name_ipa)
 
     def calculate_similarity_error(*args):
         return 404
@@ -46,11 +49,11 @@ def get_similar_names(input_name, input_type, distance_function, gender):
 
     # Determine which function to use based on input type and distance function
     if input_type == 'english' or input_type == 'turkish':
-        if distance_function == 'mp':
+        if distance_dimension == 'mp':
             calculate_similarity = calculate_similarity_metaphone
-        elif distance_function == 'ipa':
+        elif distance_dimension == 'ipa':
             calculate_similarity = calculate_similarity_ipa
-        elif distance_function == 'hybrid':
+        elif distance_dimension == 'hybrid':
             calculate_similarity = calculate_similarity_hybrid
         else:
             calculate_similarity = calculate_similarity_error
