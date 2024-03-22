@@ -34,18 +34,18 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
     conn.close()
 
     if input_type == 'english':
-        input_mp = doublemetaphone(input_name)[0]
+        input_mp = doublemetaphone(input_name)[0].upper()
         input_ipa = ipa_list(input_name)[0][0]
     elif input_type == 'ipa':
         input_ipa = input_name
         input_mp = None  # Not needed for IPA input
     elif input_type == 'mp':
         input_ipa = None # Not needed for MP input
-        input_mp = input_name  
+        input_mp = input_name.upper()
     elif input_type == 'turkish':
         ep = Epitran('tur-Latn')
         input_ipa = ep.transliterate(input_name)
-        input_mp = mhelp.map_ipa_to_metaphone(input_ipa)
+        input_mp = mhelp.map_ipa_to_metaphone(input_ipa).upper()
 
     # Determine which function to use based on input type and distance function
     if input_type == 'english' or input_type == 'turkish':
@@ -83,12 +83,20 @@ def index():
 
 @app.route('/find', methods=['POST'])
 def find_similar_names():
-    input_name = request.form['name'].capitalize()
     input_type = request.form['input_type']
+    input_name = request.form['name'].capitalize() if not input_type == 'mp' else request.form['name'].upper()
     distance_dimension = request.form['distance_dimension']
     gender = request.form['gender'] if 'gender' in request.form else None
     similar_names, input_fields = get_similar_names(input_name, input_type, distance_dimension, gender)
-    return render_template('index.html', input_name=input_name, similar_names=similar_names, input_fields=input_fields)
+    return render_template(
+        'index.html', 
+        input_name=input_name, 
+        input_type=input_type, 
+        input_fields=input_fields, 
+        similar_names=similar_names, 
+        distance_dimension=distance_dimension,
+        gender=gender
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -111,6 +111,12 @@
             distanceOptions[0].selected = true; // Select IPA Edit Distance
         }
     });
+    var genderSelector = document.getElementById('gender');
+    var typeSelector = document.getElementById('input_type');
+    var distSelector = document.getElementById('distance_dimension');
+    if ('{{ gender }}'.length != 0) genderSelector.value = '{{ gender }}';
+    if ('{{ input_type }}'.length != 0) typeSelector.value = '{{ input_type }}'; typeSelector.dispatchEvent(new Event('change'));
+    if ('{{ distance_dimension }}'.length != 0) distSelector.value = '{{ distance_dimension }}';
     </script>
 </body>
 </html>
