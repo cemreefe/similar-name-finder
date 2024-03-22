@@ -8,10 +8,24 @@
 </head>
 <body>
     <div class="container">
-        <h1>Similar Names to {{ input_name }}</h1>
-        <small>
-            {{ input_fields }}
-        </small>
+        <h1>Similar Names to '{{ input_name }}'</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Input name</th>
+                    <th>Input IPA</th>
+                    <th>Input metaphone</th>
+                </tr>
+            </thead>
+            <tbody>
+                    <tr>
+                        <td>{{ input_fields[0] }}</td>
+                        <td>{{ input_fields[1] }}</td>
+                        <td>{{ input_fields[2] }}</td>
+                    </tr>
+            </tbody>
+        </table>
+        <hr>
         <table>
             <thead>
                 <tr>
@@ -31,7 +45,7 @@
                         <td>{{ phonetic_repr }}</td>
                         <td>{{ ipa_transcription }}</td>
                         <td>{{ ipa_alternatives }}</td>
-                        <td>{{ similarity_score }}</td>
+                        <td>{{ '%0.2f' % similarity_score }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -50,8 +50,18 @@ li {
     margin-bottom: 5px;
 }
 
+table {
+    padding:1em;
+    width: 100%;
+}
+
+td, th {
+    padding-top:1em;
+    padding-left:1em;
+}
+
 th {
-    padding: 1em;
+    text-align: left;
 }
 
 button {
