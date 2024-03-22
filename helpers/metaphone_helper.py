@@ -16,9 +16,10 @@ import re
 
 # Dictionary mapping IPA sounds to their closest English sound equivalents
 IPA_TO_ENGLISH = {
+    'j': 'y',
     'ɑ': 'a', 'æ': 'ae', 'ɐ': 'a', 'ɒ': 'o', 'ɔ': 'o', 'ɕ': 'sh', 'ç': 'sh', 'ð': 'th',
     'ɘ': 'e', 'ə': 'e', 'ɚ': 'er', 'ɛ': 'e', 'ɜ': 'er', 'ɝ': 'er', 'ɞ': 'e', 'ɟ': 'j',
-    'ɡ': 'g', 'ɣ': 'h', 'ɤ': 'o', 'ɥ': 'h', 'ɦ': 'h', 'ɧ': 'ng', 'ɨ': 'i', 'ɪ': 'i',
+    'ɡ': 'gu', 'ɣ': 'h', 'ɤ': 'o', 'ɥ': 'h', 'ɦ': 'h', 'ɧ': 'ng', 'ɨ': 'i', 'ɪ': 'i',
     'ɫ': 'l', 'ɬ': 'l', 'ɭ': 'l', 'ɮ': 'l', 'ɯ': 'u', 'ɰ': 'w', 'ɱ': 'm', 'ɲ': 'n',
     'ɳ': 'n', 'ɴ': 'n', 'ɵ': 'o', 'ɶ': 'o', 'ɸ': 'f', 'ɹ': 'r', 'ɺ': 'r', 'ɻ': 'r',
     'ɼ': 'r', 'ɽ': 'r', 'ɾ': 'r', 'ɿ': 'r', 'ʀ': 'r', 'ʁ': 'r', 'ʂ': 'sh', 'ʃ': 'sh',
@@ -106,7 +107,10 @@ METAPHONE_RULES = [
     (r'z', 's'),  # Z transforms into S
 
     # Drop all vowels unless it is the beginning character
-    (r'(?<!^)[aeiou]', '')
+    (r'(?<!^)[aeiou]', ''),
+
+    # Replace vowels with A
+    (r'[aeiouy]', r'a'),
 ]
 
 
@@ -148,9 +152,9 @@ def map_ipa_to_metaphone(ipa_str):
     mapped_to_en = map_ipa_to_english(ipa_str)
     return convert_to_metaphone(mapped_to_en)
 
-ipa_string = "ɪnˈtɝnæʃnəl fəˈnɛtɪk ˈælfəbɛt"
-english_phonetic = map_ipa_to_english(ipa_string)
-print(english_phonetic)  # Output: "internaeshnl fenetik aelfabet"
+# ipa_string = "ɪnˈtɝnæʃnəl fəˈnɛtɪk ˈælfəbɛt"
+# english_phonetic = map_ipa_to_english(ipa_string)
+# print(english_phonetic)  # Output: "internaeshnl fenetik aelfabet"
 
-metaphone_code = convert_to_metaphone(english_phonetic)
-print(">>>>>", metaphone_code)  # Output: "ntrn"
+# metaphone_code = convert_to_metaphone(english_phonetic)
+# print(">>>>>", metaphone_code)  # Output: "ntrn"

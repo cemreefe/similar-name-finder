@@ -53,8 +53,9 @@
 
         // If input type is Metaphone, disable IPA options and select the next available option
         if (inputType === 'mp') {
-            distanceOptions[0].disabled = true; // IPA Edit Distance
-            distanceOptions[1].selected = true; // Select Metaphone Edit Distance
+            distanceOptions[0].selected = true; // Select Metaphone Edit Distance
+            distanceOptions[1].disabled = true; // IPA Edit Distance
+            
         }
         // If input type is IPA, disable Metaphone options and select the next available option
         else if (inputType === 'ipa') {
