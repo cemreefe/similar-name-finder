@@ -57,9 +57,9 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
             calculate_similarity = calculate_similarity_hybrid
         else:
             calculate_similarity = calculate_similarity_error
-    elif input_type == 'ipa' and distance_function == 'ipa':
+    elif input_type == 'ipa' and distance_dimension == 'ipa':
         calculate_similarity = calculate_similarity_ipa
-    elif input_type == 'mp' and distance_function == 'mp':
+    elif input_type == 'mp' and distance_dimension == 'mp':
         calculate_similarity = calculate_similarity_metaphone
     else:
         calculate_similarity = calculate_similarity_error
@@ -85,9 +85,9 @@ def index():
 def find_similar_names():
     input_name = request.form['name']
     input_type = request.form['input_type']
-    distance_function = request.form['distance_function']
+    distance_dimension = request.form['distance_dimension']
     gender = request.form['gender'] if 'gender' in request.form else None
-    similar_names, input_fields = get_similar_names(input_name, input_type, distance_function, gender)
+    similar_names, input_fields = get_similar_names(input_name, input_type, distance_dimension, gender)
     return render_template('results.html', input_name=input_name, similar_names=similar_names, input_fields=input_fields)
 
 if __name__ == '__main__':
