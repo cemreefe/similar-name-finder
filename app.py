@@ -6,6 +6,7 @@ from epitran import Epitran
 import helpers.metaphone_helper as mhelp
 from eng_to_ipa import ipa_list
 from jellyfish import jaro_winkler_similarity
+import os
 
 # distance_function = edit_distance
 distance_function = lambda x, y: 1 - jaro_winkler_similarity(x, y)
@@ -98,5 +99,8 @@ def find_similar_names():
     )
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    if os.environ.get('VERCEL', None):
+        app.run(debug=False, host="0.0.0.0", port=8443)
+    else:
+        app.run(debug=True)
 
