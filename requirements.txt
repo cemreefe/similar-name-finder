@@ -5,4 +5,4 @@ eng_to_ipa==0.0.2
 jellyfish==1.0.3
 jamo==0.4.1
 epitran==1.24
-numpy==1.19.3
+numpy==1.19.0
