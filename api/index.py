@@ -85,6 +85,7 @@ def index():
 def find_similar_names():
     input_type = request.form['input_type']
     input_name = request.form['name'].capitalize() if not input_type == 'mp' else request.form['name'].upper()
+    print(f"Received name <{input_name}>")
     distance_dimension = request.form['distance_dimension']
     gender = request.form['gender'] if 'gender' in request.form else None
     similar_names, input_fields = get_similar_names(input_name, input_type, distance_dimension, gender)
