@@ -8,7 +8,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Find Similar Names</h1>
+        <h1>Similar Name Finder</h1>
+        <small>Made by <a href='https://cemrekarakas.com'>Cemre</a></small>
         <form action="/find" method="POST">
             <label for="name">Enter Name:</label>
             <input type="text" id="name" name="name" required value='{% if input_fields %}{{ input_fields[0] }}{% endif %}'>
