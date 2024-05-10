@@ -1,5 +1,7 @@
 # Similar Names Finder
 
+Currently lives on [similar-name-finder.vercel.app](https://similar-name-finder.vercel.app/)
+
 This Flask web application helps users find similar names based on phonetic similarity. It utilizes various algorithms to calculate the similarity between names, allowing users to search for similar names in different languages or using different phonetic representations.
 
 ## Features
