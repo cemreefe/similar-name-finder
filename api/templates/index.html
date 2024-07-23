@@ -26,8 +26,8 @@
             
             <label for="input_type">Select Input Type:</label>
             <select id="input_type" name="input_type">
-                <option value="english" {% if request.args.get('input_type') == 'english' %}selected{% endif %}>English Name</option>
-                <option value="turkish" {% if request.args.get('input_type') == 'turkish' %}selected{% endif %}>Turkish Name</option>
+                <option value="english" {% if request.args.get('input_type') == 'english' %}selected{% endif %}>English Spelling</option>
+                <option value="turkish" {% if request.args.get('input_type') == 'turkish' %}selected{% endif %}>Turkish Spelling</option>
                 <option value="ipa" {% if request.args.get('input_type') == 'ipa' %}selected{% endif %}>IPA Transcription</option>
                 <option value="mp" {% if request.args.get('input_type') == 'mp' %}selected{% endif %}>Metaphone</option>
             </select>
