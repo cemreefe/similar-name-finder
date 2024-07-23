@@ -20,29 +20,29 @@
     <div class="container">
         <h1>Similar Name Finder</h1>
         <small>Made by <a href='https://cemrekarakas.com'>Cemre</a></small>
-        <form action="/find" method="POST">
+        <form action="/find" method="GET">
             <label for="name">Enter Name:</label>
-            <input type="text" id="name" name="name" required value='{% if input_fields %}{{ input_fields[0] }}{% endif %}'>
+            <input type="text" id="name" name="name" required value="{{ request.args.get('name', '') }}">
             
             <label for="input_type">Select Input Type:</label>
             <select id="input_type" name="input_type">
-                <option value="english">English Name</option>
-                <option value="turkish">Turkish Name</option>
-                <option value="ipa">IPA Transcription</option>
-                <option value="mp">Metaphone</option>
+                <option value="english" {% if request.args.get('input_type') == 'english' %}selected{% endif %}>English Name</option>
+                <option value="turkish" {% if request.args.get('input_type') == 'turkish' %}selected{% endif %}>Turkish Name</option>
+                <option value="ipa" {% if request.args.get('input_type') == 'ipa' %}selected{% endif %}>IPA Transcription</option>
+                <option value="mp" {% if request.args.get('input_type') == 'mp' %}selected{% endif %}>Metaphone</option>
             </select>
 
             <label for="distance_dimension">Select Distance Function:</label>
             <select id="distance_dimension" name="distance_dimension">
-                <option value="mp">Metaphone Edit Distance</option>
-                <option value="ipa">IPA Edit Distance</option>
+                <option value="mp" {% if request.args.get('distance_dimension') == 'mp' %}selected{% endif %}>Metaphone Edit Distance</option>
+                <option value="ipa" {% if request.args.get('distance_dimension') == 'ipa' %}selected{% endif %}>IPA Edit Distance</option>
             </select>
 
             <label for="gender">Select Gender Preference:</label>
             <select id="gender" name="gender">
-                <option value="">No Preference</option>
-                <option value="boy">Boy</option>
-                <option value="girl">Girl</option>
+                <option value="" {% if request.args.get('gender') == '' %}selected{% endif %}>No Preference</option>
+                <option value="boy" {% if request.args.get('gender') == 'boy' %}selected{% endif %}>Boy</option>
+                <option value="girl" {% if request.args.get('gender') == 'girl' %}selected{% endif %}>Girl</option>
             </select>
 
             <button type="submit">Search Similar Names</button>
