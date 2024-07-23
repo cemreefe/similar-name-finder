@@ -81,14 +81,15 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
 def index():
     return render_template('index.html')
 
-@app.route('/find', methods=['POST'])
+@app.route('/find', methods=['GET'])
 def find_similar_names():
-    input_type = request.form['input_type']
-    input_name = request.form['name'].capitalize() if not input_type == 'mp' else request.form['name'].upper()
-    print(f"Received name <{input_name}>")
-    distance_dimension = request.form['distance_dimension']
-    gender = request.form['gender'] if 'gender' in request.form else None
+    input_type = request.args.get('input_type')
+    input_name = request.args.get('name').capitalize() if input_type != 'mp' else request.args.get('name').upper()
+    distance_dimension = request.args.get('distance_dimension')
+    gender = request.args.get('gender')
+    
     similar_names, input_fields = get_similar_names(input_name, input_type, distance_dimension, gender)
+    
     return render_template(
         'index.html', 
         input_name=input_name, 
@@ -104,4 +105,3 @@ if __name__ == '__main__':
         app.run(debug=False, host="0.0.0.0", port=8443)
     else:
         app.run(debug=True)
-
