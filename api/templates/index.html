@@ -20,7 +20,7 @@
     <div class="container">
         <h1>Similar Name Finder</h1>
         <small>Made by <a href='https://cemrekarakas.com'>Cemre</a></small>
-        <form action="/find/{{ input_name }}" method="GET">
+        <form id="nameForm" action="/find/{{ input_name }}" method="GET">
             <label for="name">Enter Name:</label>
             <input type="text" id="name" name="name" required value="{{ input_name }}">
             
