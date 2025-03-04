@@ -88,7 +88,7 @@
                         <th>Phonetic Transcription</th>
                         <th>IPA Transcription</th>
 <!--                         <th>IPA Alternatives</th> -->
-                        <th>Similarity Score</th>
+<!--                         <th>Similarity Score</th> -->
                         <th>Share</th>
                     </tr>
                 </thead>
@@ -100,7 +100,7 @@
                             <td>{{ phonetic_repr }}</td>
                             <td>{{ ipa_transcription }}</td>
 <!--                             <td>{{ ipa_alternatives }}</td> -->
-                            <td>{{ '%0.2f' % similarity_score }}</td>
+<!--                             <td>{{ '%0.2f' % similarity_score }}</td> -->
                             <td><share onclick="shareContent(this)" data-share-text="{{ input_name }}'s English name is {{ name }}. Learn yours now!"><img src="{{ url_for('static', filename='share.png') }}" style="width:2em; cursor:pointer;"></share></td>
                         </tr>
                     {% endfor %}
