@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from metaphone import doublemetaphone
 from nltk import edit_distance
@@ -76,15 +76,25 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
     similar_names.sort(key=lambda x: x[-1])  # Sort by similarity score
     return similar_names[:10], (input_name, input_ipa, input_mp)
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/find', methods=['GET'])
-def find_similar_names():
+def find_redirect():
+    input_name = request.args.get('name')
+    if not input_name:
+        return redirect(url_for('index'))
+    return redirect(url_for(
+        'find_similar_names_pretty', input_name=input_name, 
+        input_type=request.args.get('input_type'),
+        distance_dimension=request.args.get('distance_dimension'),
+        gender=request.args.get('gender')
+    ))
+
+@app.route('/find/<string:input_name>', methods=['GET'])
+def find_similar_names_pretty(input_name):
     input_type = request.args.get('input_type')
-    input_name = request.args.get('name').capitalize() if input_type != 'mp' else request.args.get('name').upper()
     distance_dimension = request.args.get('distance_dimension')
     gender = request.args.get('gender')
     
