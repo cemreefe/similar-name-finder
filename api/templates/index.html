@@ -89,6 +89,7 @@
                         <th>IPA Transcription</th>
 <!--                         <th>IPA Alternatives</th> -->
                         <th>Similarity Score</th>
+                        <th>Share</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,6 +101,7 @@
                             <td>{{ ipa_transcription }}</td>
 <!--                             <td>{{ ipa_alternatives }}</td> -->
                             <td>{{ '%0.2f' % similarity_score }}</td>
+                            <td><button onclick="shareContent(this)" data-share-text="{{ input_name }}'s English name is {{ name }}. Learn yours now!"><img src="{{ url_for('static', filename='share.png') }}"></button></td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -208,5 +210,21 @@
     document.getElementById('name').addEventListener('input', updateFormAction);
     updateFormAction();
     </script>
+    <script>
+    function shareContent(button) {
+        const shareText = button.getAttribute('data-share-text');  // Get the share context from data attribute
+
+        if (navigator.share) {
+            navigator.share({
+                title: '',
+                text: shareText + ' https://namefinder.dutl.uk/',
+            })
+            .then(() => console.log('Shared successfully!'))
+            .catch((error) => console.log('Error sharing:', error));
+        } else {
+            console.log('Share API not supported on this browser.');
+        }
+    }
+</script>
 </body>
 </html>
