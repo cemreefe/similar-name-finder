@@ -22,7 +22,7 @@
         <small>Made by <a href='https://cemrekarakas.com'>Cemre</a></small>
         <form action="/find/{{ input_name }}" method="GET">
             <label for="name">Enter Name:</label>
-            <input type="text" id="name" name="name" required value="{{ request.view_args.get('name', '') }}">
+            <input type="text" id="name" name="name" required value="{{ input_name }}">
             
             <label for="input_type">Select Input Type:</label>
             <select id="input_type" name="input_type">
@@ -126,6 +126,17 @@
     if ('{{ gender }}'.length != 0) genderSelector.value = '{{ gender }}';
     if ('{{ input_type }}'.length != 0) typeSelector.value = '{{ input_type }}'; typeSelector.dispatchEvent(new Event('change'));
     if ('{{ distance_dimension }}'.length != 0) distSelector.value = '{{ distance_dimension }}';
+    </script>
+
+    <!-- Update form action URL based on name. -->
+    <script>
+    function updateFormAction() {
+        var nameInput = document.getElementById('name').value;
+        var newAction = "/find/" + encodeURIComponent(nameInput);
+        document.getElementById('nameForm').action = newAction;
+    }
+    document.getElementById('name').addEventListener('input', updateFormAction);
+    updateFormAction();
     </script>
 </body>
 </html>
