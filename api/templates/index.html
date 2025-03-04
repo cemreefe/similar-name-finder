@@ -20,9 +20,9 @@
     <div class="container">
         <h1>Similar Name Finder</h1>
         <small>Made by <a href='https://cemrekarakas.com'>Cemre</a></small>
-        <form action="/find" method="GET">
+        <form action="/find/{{ request.args.get('name', '') }}" method="GET">
             <label for="name">Enter Name:</label>
-            <input type="text" id="name" name="name" required value="{{ request.args.get('name', '') }}">
+            <input type="text" id="name" name="name" required value="{{ request.view_args.get('name', '') }}">
             
             <label for="input_type">Select Input Type:</label>
             <select id="input_type" name="input_type">
