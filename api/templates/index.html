@@ -57,7 +57,7 @@
                 <option value="girl" {% if request.args.get('gender') == 'girl' %}selected{% endif %}>Girl</option>
             </select>
 
-            <button type="submit">Search Similar Names</button>
+            <button type="submit" class="action">Search Similar Names</button>
         </form>
 
         {% if input_fields %}
@@ -101,7 +101,7 @@
                             <td>{{ ipa_transcription }}</td>
 <!--                             <td>{{ ipa_alternatives }}</td> -->
                             <td>{{ '%0.2f' % similarity_score }}</td>
-                            <td><button onclick="shareContent(this)" data-share-text="{{ input_name }}'s English name is {{ name }}. Learn yours now!"><img src="{{ url_for('static', filename='share.png') }}"></button></td>
+                            <td><share onclick="shareContent(this)" data-share-text="{{ input_name }}'s English name is {{ name }}. Learn yours now!"><img src="{{ url_for('static', filename='share.png') }}" style="width:2em; cursor:pointer;"></share></td>
                         </tr>
                     {% endfor %}
                 </tbody>
