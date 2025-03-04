@@ -39,7 +39,7 @@ select {
     padding:0.5em;
 }
 
-button {
+button.action {
     padding: 8px 20px;
     background-color: #007bff;
     color: #fff;
