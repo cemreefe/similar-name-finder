@@ -7,6 +7,7 @@ import helpers.metaphone_helper as mhelp
 from eng_to_ipa import ipa_list
 from jellyfish import jaro_winkler_similarity
 import os
+from urllib.parse import unquote
 
 # distance_function = edit_distance
 distance_function = lambda x, y: 1 - jaro_winkler_similarity(x, y)
@@ -83,6 +84,7 @@ def index():
 @app.route('/find', methods=['GET'])
 def find_redirect():
     input_name = request.args.get('name')
+    input_name = unquote(input_name)
     if not input_name:
         return redirect(url_for('index'))
     return redirect(url_for(
