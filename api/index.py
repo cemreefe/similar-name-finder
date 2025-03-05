@@ -96,6 +96,7 @@ def find_redirect():
 
 @app.route('/find/<string:input_name>', methods=['GET'])
 def find_similar_names_pretty(input_name):
+    input_name = unquote(input_name)
     input_type = request.args.get('input_type')
     distance_dimension = request.args.get('distance_dimension')
     gender = request.args.get('gender')
