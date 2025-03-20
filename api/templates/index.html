@@ -48,6 +48,7 @@
             <select id="distance_dimension" name="distance_dimension">
                 <option value="mp" {% if request.args.get('distance_dimension') == 'mp' %}selected{% endif %}>Metaphone Edit Distance</option>
                 <option value="ipa" {% if request.args.get('distance_dimension') == 'ipa' %}selected{% endif %}>IPA Edit Distance</option>
+                <option value="spelling" {% if request.args.get('distance_dimension') == 'spelling' %}selected{% endif %}>Spelling Distance</option>
             </select>
 
             <label for="gender">Select Gender Preference:</label>
