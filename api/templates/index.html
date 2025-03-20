@@ -189,8 +189,8 @@
         }
         // If input type is IPA, disable Metaphone options and select the next available option
         else if (inputType === 'ipa') {
-            distanceOptions[1].disabled = true; // Metaphone Edit Distance
-            distanceOptions[0].selected = true; // Select IPA Edit Distance
+            distanceOptions[0].disabled = true; // Metaphone Edit Distance
+            distanceOptions[1].selected = true; // Select IPA Edit Distance
         }
     });
     var genderSelector = document.getElementById('gender');
