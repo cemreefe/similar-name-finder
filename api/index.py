@@ -8,6 +8,7 @@ from eng_to_ipa import ipa_list
 from jellyfish import jaro_winkler_similarity
 import os
 from urllib.parse import unquote
+import re
 
 # distance_function = edit_distance
 distance_function = lambda x, y: 1 - jaro_winkler_similarity(x, y)
@@ -26,6 +27,11 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
         if input_ipa and name_ipa:
             return distance_function(input_mp, name_phonetic_repr) + distance_function(input_ipa, name_ipa)/100
         return distance_function(input_mp, name_phonetic_repr)
+
+    def calculate_similarity_spelling(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
+        _input_name = re.sub(r'(.)\1+', r'\1', input_name)
+        _name = re.sub(r'(.)\1+', r'\1', name)
+        return distance_function(_input_name, _name)
 
     def calculate_similarity_error(*args):
         return 404
@@ -56,6 +62,8 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
             calculate_similarity = calculate_similarity_metaphone
         elif distance_dimension == 'ipa':
             calculate_similarity = calculate_similarity_ipa
+        elif distance_dimension == 'spelling':
+            calculate_similarity = calculate_similarity_spelling
         else:
             calculate_similarity = calculate_similarity_error
     elif input_type == 'ipa' and distance_dimension == 'ipa':
