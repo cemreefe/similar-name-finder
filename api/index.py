@@ -55,6 +55,7 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
         ep = Epitran('tur-Latn')
         input_ipa = ep.transliterate(input_name)
         input_mp = mhelp.map_ipa_to_metaphone(input_ipa).upper()
+        input_mp = input_mp.replace('B', 'P')
 
     # Determine which function to use based on input type and distance function
     if input_type == 'english' or input_type == 'turkish':
