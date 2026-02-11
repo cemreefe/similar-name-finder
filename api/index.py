@@ -2,7 +2,7 @@ import pkg_resources  # noqa: F401 - required by epitran
 import threading
 from dataclasses import dataclass
 from enum import Enum
-from typing import assert_never
+from typing import Any, assert_never
 from flask import Flask, render_template, request, redirect, url_for
 try:
     from api.translations import get_translations, LANGUAGES
@@ -60,7 +60,7 @@ def _encode_romanized(name: str) -> NameRepr:
     return NameRepr(name, ipa=ipa, mp=mp)
 
 
-_epitran_cache: dict[str, "Epitran"] = {}
+_epitran_cache: dict[str, Any] = {}
 
 
 def _get_epitran(lang_code: str):
@@ -148,7 +148,9 @@ def _encode(name, input_type: InputType) -> NameRepr:
         case InputType.ENGLISH:
             return _encode_romanized(name)
         case InputType.TURKISH:
-            return _encode_epitran(name, 'tur-Latn')
+            # Epitran tur-Latn init causes ~10s timeouts on Vercel serverless cold start.
+            # Using romanized fallback until we can optimize or replace.
+            return _encode_romanized(name)
         case InputType.FRENCH:
             return _encode_epitran(name, 'fra-Latn')
         case InputType.CHINESE:
