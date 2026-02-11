@@ -239,6 +239,18 @@
     }
 
     document.addEventListener('click', function(e) {
+        var adBanner = e.target.closest('a.ad-banner');
+        if (adBanner && adBanner.href) {
+            var nameInput = document.getElementById('name');
+            var name = nameInput ? nameInput.value.trim() : '';
+            if (name && adBanner.href.indexOf('/find/') === -1) {
+                e.preventDefault();
+                var url = new URL(adBanner.href);
+                var path = url.pathname.replace(/\/$/, '');
+                url.pathname = path + '/find/' + encodeURIComponent(name);
+                location.href = url.toString();
+            }
+        }
         var learnBtn = e.target.closest('.learn-btn');
         if (learnBtn) {
             e.preventDefault();

@@ -292,11 +292,23 @@ def _get_lang():
     return lang if lang in LANGUAGES else 'en'
 
 
-def _product_url(path: str) -> str:
+def _product_url(path: str, name: str | None = None) -> str:
+    base = path.rstrip('/')
+    if name and name.strip():
+        base = base + '/find/' + quote(name.strip(), safe='')
     lang = _get_lang()
     if lang == 'en':
-        return path
-    return path + ('&' if '?' in path else '?') + urlencode({'lang': lang})
+        return base
+    return base + ('&' if '?' in base else '?') + urlencode({'lang': lang})
+
+
+def _product_urls(input_name: str = '') -> dict:
+    name = input_name.strip() if input_name else None
+    return {
+        'index': _product_url('/', name),
+        'arabic': _product_url('/my-name-in-arabic/', name),
+        'korean': _product_url('/my-name-in-korean/', name),
+    }
 
 
 def _lang_url(lang_code):
@@ -310,20 +322,13 @@ def _lang_url(lang_code):
     return request.path + ('?' + urlencode(args) if args else '')
 
 
-def _product_urls():
-    return {
-        'index': _product_url('/'),
-        'arabic': _product_url('/my-name-in-arabic/'),
-        'korean': _product_url('/my-name-in-korean/'),
-    }
-
-
 @app.route('/')
 def index():
     lang = _get_lang()
     t = get_translations(lang)
     lang_links = [(code, label, _lang_url(code)) for code, (label, _) in LANGUAGES.items()]
     input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_name = unquote(request.args.get('name', '') or '')
     return render_template(
         'index.html', t=t, lang=lang, languages=LANGUAGES, lang_links=lang_links,
         input_type=input_type,
@@ -331,7 +336,8 @@ def index():
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
-        product_urls=_product_urls(),
+        product_urls=_product_urls(input_name),
+        input_name=input_name,
     )
 
 
@@ -441,7 +447,7 @@ def find_similar_names_pretty(input_name):
         lang_links=[(code, label, _lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
-        product_urls=_product_urls(),
+        product_urls=_product_urls(input_name),
     )
 
 
@@ -475,6 +481,7 @@ def arabic_index():
     t = get_arabic_page_translations(lang)
     lang_links = [(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()]
     input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_name = unquote(request.args.get('name', '') or '')
     return render_template(
         'arabic.html',
         t=t,
@@ -486,7 +493,8 @@ def arabic_index():
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
-        product_urls=_product_urls(),
+        product_urls=_product_urls(input_name),
+        input_name=input_name,
     )
 
 
@@ -554,7 +562,7 @@ def find_similar_arabic_names(input_name):
         lang_links=[(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
-        product_urls=_product_urls(),
+        product_urls=_product_urls(input_name),
     )
 
 
@@ -564,6 +572,7 @@ def korean_index():
     t = get_korean_page_translations(lang)
     lang_links = [(code, label, _kr_lang_url(code)) for code, (label, _) in LANGUAGES.items()]
     input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_name = unquote(request.args.get('name', '') or '')
     return render_template(
         'korean.html',
         t=t,
@@ -575,7 +584,8 @@ def korean_index():
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
-        product_urls=_product_urls(),
+        product_urls=_product_urls(input_name),
+        input_name=input_name,
     )
 
 
@@ -643,7 +653,7 @@ def find_similar_korean_names(input_name):
         lang_links=[(code, label, _kr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
-        product_urls=_product_urls(),
+        product_urls=_product_urls(input_name),
     )
 
 
