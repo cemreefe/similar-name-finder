@@ -9,4 +9,3 @@ pinyin-to-ipa>=1.0.0
 pypinyin>=0.50.0
 korean-romanizer>=0.28.0
 pykakasi>=2.0.0
-numpy==1.20.2
