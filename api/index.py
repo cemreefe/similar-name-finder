@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from metaphone import doublemetaphone
-from nltk import edit_distance
 from epitran import Epitran
 import helpers.metaphone_helper as mhelp
 from eng_to_ipa import ipa_list
@@ -10,35 +9,43 @@ import os
 from urllib.parse import unquote
 import re
 
-# distance_function = edit_distance
-distance_function = lambda x, y: 1 - jaro_winkler_similarity(x, y)
+
+def distance_function(x, y):
+    return 1 - jaro_winkler_similarity(x, y)
+
+
+def _similarity_ipa(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
+    if input_mp and name_phonetic_repr:
+        return distance_function(input_ipa, name_ipa) + distance_function(input_mp, name_phonetic_repr)/100
+    return distance_function(input_ipa, name_ipa)
+
+
+def _similarity_metaphone(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
+    if input_ipa and name_ipa:
+        return distance_function(input_mp, name_phonetic_repr) + distance_function(input_ipa, name_ipa)/100
+    return distance_function(input_mp, name_phonetic_repr)
+
+
+def _similarity_spelling(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
+    _input_name = re.sub(r'(.)\1+', r'\1', input_name)
+    _name = re.sub(r'(.)\1+', r'\1', name)
+    return distance_function(_input_name, _name)
+
+
+def _similarity_error(*args):
+    return 404
+
 
 app = Flask(__name__)
 
+
 def get_similar_names(input_name, input_type, distance_dimension, gender):
-
-    # Define separate functions for different cases
-    def calculate_similarity_ipa(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-        if input_mp and name_phonetic_repr:
-            return distance_function(input_ipa, name_ipa) + distance_function(input_mp, name_phonetic_repr)/100
-        return distance_function(input_ipa, name_ipa)
-
-    def calculate_similarity_metaphone(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-        if input_ipa and name_ipa:
-            return distance_function(input_mp, name_phonetic_repr) + distance_function(input_ipa, name_ipa)/100
-        return distance_function(input_mp, name_phonetic_repr)
-
-    def calculate_similarity_spelling(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-        _input_name = re.sub(r'(.)\1+', r'\1', input_name)
-        _name = re.sub(r'(.)\1+', r'\1', name)
-        return distance_function(_input_name, _name)
-
-    def calculate_similarity_error(*args):
-        return 404
-
     conn = sqlite3.connect('names_database.db')
     cursor = conn.cursor()
-    cursor.execute('''SELECT * FROM names''')
+    if gender:
+        cursor.execute('SELECT * FROM names WHERE gender = ?', (gender,))
+    else:
+        cursor.execute('SELECT * FROM names')
     all_names = cursor.fetchall()
     conn.close()
 
@@ -47,48 +54,45 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
         input_ipa = ipa_list(input_name)[0][0]
     elif input_type == 'ipa':
         input_ipa = input_name
-        input_mp = None  # Not needed for IPA input
+        input_mp = None
     elif input_type == 'mp':
-        input_ipa = None # Not needed for MP input
+        input_ipa = None
         input_mp = input_name.upper()
     elif input_type == 'turkish':
         ep = Epitran('tur-Latn')
         input_ipa = ep.transliterate(input_name)
         input_mp = mhelp.map_ipa_to_metaphone(input_ipa).upper()
         input_mp = input_mp.replace('B', 'P')
-
-    # Determine which function to use based on input type and distance function
-    if input_type == 'english' or input_type == 'turkish':
-        if distance_dimension == 'mp':
-            calculate_similarity = calculate_similarity_metaphone
-        elif distance_dimension == 'ipa':
-            calculate_similarity = calculate_similarity_ipa
-        elif distance_dimension == 'spelling':
-            calculate_similarity = calculate_similarity_spelling
-        else:
-            calculate_similarity = calculate_similarity_error
-    elif input_type == 'ipa' and distance_dimension == 'ipa':
-        calculate_similarity = calculate_similarity_ipa
-    elif input_type == 'mp' and distance_dimension == 'mp':
-        calculate_similarity = calculate_similarity_metaphone
     else:
-        calculate_similarity = calculate_similarity_error
+        raise ValueError(f"Unknown input_type: {input_type!r}")
+
+    if input_type in ('english', 'turkish'):
+        similarity_funcs = {
+            'mp': _similarity_metaphone,
+            'ipa': _similarity_ipa,
+            'spelling': _similarity_spelling,
+        }
+        calculate_similarity = similarity_funcs.get(distance_dimension, _similarity_error)
+    elif input_type == 'ipa' and distance_dimension == 'ipa':
+        calculate_similarity = _similarity_ipa
+    elif input_type == 'mp' and distance_dimension == 'mp':
+        calculate_similarity = _similarity_metaphone
+    else:
+        calculate_similarity = _similarity_error
 
     similar_names = []
-
     for name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts in all_names:
-        if gender and name_gender != gender:
-            continue  # Skip if gender preference doesn't match
-
         similarity_score = calculate_similarity(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts)
         similar_names.append((name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts, similarity_score))
 
-    similar_names.sort(key=lambda x: x[-1])  # Sort by similarity score
+    similar_names.sort(key=lambda x: x[-1])
     return similar_names[:10], (input_name, input_ipa, input_mp)
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/find', methods=['GET'])
 def find_redirect():
@@ -97,11 +101,12 @@ def find_redirect():
     if not input_name:
         return redirect(url_for('index'))
     return redirect(url_for(
-        'find_similar_names_pretty', input_name=input_name, 
+        'find_similar_names_pretty', input_name=input_name,
         input_type=request.args.get('input_type'),
         distance_dimension=request.args.get('distance_dimension'),
         gender=request.args.get('gender')
     ))
+
 
 @app.route('/find/<string:input_name>', methods=['GET'])
 def find_similar_names_pretty(input_name):
@@ -109,18 +114,19 @@ def find_similar_names_pretty(input_name):
     input_type = request.args.get('input_type')
     distance_dimension = request.args.get('distance_dimension')
     gender = request.args.get('gender')
-    
+
     similar_names, input_fields = get_similar_names(input_name, input_type, distance_dimension, gender)
-    
+
     return render_template(
-        'index.html', 
-        input_name=input_name, 
-        input_type=input_type, 
-        input_fields=input_fields, 
-        similar_names=similar_names, 
+        'index.html',
+        input_name=input_name,
+        input_type=input_type,
+        input_fields=input_fields,
+        similar_names=similar_names,
         distance_dimension=distance_dimension,
         gender=gender
     )
+
 
 if __name__ == '__main__':
     if os.environ.get('VERCEL', None):
