@@ -292,6 +292,13 @@ def _get_lang():
     return lang if lang in LANGUAGES else 'en'
 
 
+def _product_url(path: str) -> str:
+    lang = _get_lang()
+    if lang == 'en':
+        return path
+    return path + ('&' if '?' in path else '?') + urlencode({'lang': lang})
+
+
 def _lang_url(lang_code):
     args = request.args.to_dict()
     if lang_code == 'en':
@@ -301,6 +308,14 @@ def _lang_url(lang_code):
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
     return request.path + ('?' + urlencode(args) if args else '')
+
+
+def _product_urls():
+    return {
+        'index': _product_url('/'),
+        'arabic': _product_url('/my-name-in-arabic/'),
+        'korean': _product_url('/my-name-in-korean/'),
+    }
 
 
 @app.route('/')
@@ -316,6 +331,7 @@ def index():
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
+        product_urls=_product_urls(),
     )
 
 
@@ -425,6 +441,7 @@ def find_similar_names_pretty(input_name):
         lang_links=[(code, label, _lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
+        product_urls=_product_urls(),
     )
 
 
@@ -469,6 +486,7 @@ def arabic_index():
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
+        product_urls=_product_urls(),
     )
 
 
@@ -536,6 +554,7 @@ def find_similar_arabic_names(input_name):
         lang_links=[(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
+        product_urls=_product_urls(),
     )
 
 
@@ -556,6 +575,7 @@ def korean_index():
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
+        product_urls=_product_urls(),
     )
 
 
@@ -623,6 +643,7 @@ def find_similar_korean_names(input_name):
         lang_links=[(code, label, _kr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
+        product_urls=_product_urls(),
     )
 
 

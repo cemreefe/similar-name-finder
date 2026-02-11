@@ -67,7 +67,7 @@
                 <p class="tagline">{{ t.tagline }}</p>
                 <div class="credit">
                 <a href="https://www.buymeacoffee.com/cemreefe" target="_blank" rel="noopener" class="coffee-btn">☕️ {{ t.coffee }}</a>
-                <p class="credit-by">{{ t.made_by }} <a href="https://cemrekarakas.com">cemre</a></p>
+                <p class="credit-by">{% if t.get('made_by_reversed') %}<a href="https://cemrekarakas.com">cemre</a> {{ t.made_by_reversed }}{% else %}{{ t.made_by }} <a href="https://cemrekarakas.com">cemre</a>{% endif %}</p>
             </div>
         </header>
 
@@ -121,7 +121,7 @@
 
         {% if input_fields and similar_names %}
         <section class="results" aria-labelledby="results-heading">
-            <h2 id="results-heading">{{ t.similar_to.format(name=input_name) }}</h2>
+            <h2 id="results-heading">{{ t.similar_to.format(name=input_name|capitalize) }}</h2>
             {% if mismatch_cta_links %}
             <p class="script-mismatch">
                 {% if mismatch_cta_links|length == 1 %}
@@ -139,7 +139,7 @@
             </p>
             {% endif %}
             {% if input_fields.mp or input_fields.ipa %}
-            <p class="input-encoding">{{ t.get('input_encoding', 'Your encoding') }}: MP <code>{{ input_fields.mp or '—' }}</code>{% if input_fields.ipa and '*' not in input_fields.ipa %} · IPA <code>{{ input_fields.ipa }}</code>{% endif %}</p>
+            <p class="input-encoding">{{ t.get('input_mp', 'Metaphone') }} <code>{{ input_fields.mp or '—' }}</code>{% if input_fields.ipa and '*' not in input_fields.ipa %} · IPA <code>{{ input_fields.ipa }}</code>{% endif %}</p>
             {% endif %}
             <ul class="name-list">
                 {% for name, name_gender, name_mp, name_ipa, ipa_alternatives, score, original_writing in similar_names %}
@@ -159,13 +159,13 @@
 
         </main>
         <aside class="sidebar">
-            <a href="/my-name-in-arabic/" class="ad-banner">
+            <a href="{{ product_urls.arabic }}" class="ad-banner">
                 <span class="ad-banner-flag">🇸🇦</span>
                 <span class="ad-banner-title">{{ t.ad_banner_arabic_title }}</span>
                 <span class="ad-banner-desc">{{ t.ad_banner_arabic_desc }}</span>
                 <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
             </a>
-            <a href="/my-name-in-korean/" class="ad-banner">
+            <a href="{{ product_urls.korean }}" class="ad-banner">
                 <span class="ad-banner-flag">🇰🇷</span>
                 <span class="ad-banner-title">{{ t.ad_banner_korean_title }}</span>
                 <span class="ad-banner-desc">{{ t.ad_banner_korean_desc }}</span>
