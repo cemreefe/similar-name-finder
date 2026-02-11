@@ -33,7 +33,7 @@ class TestFindRedirect:
     def test_redirects_to_index_without_name(self, client):
         response = client.get("/find?name=")
         assert response.status_code == 302
-        assert response.headers["Location"].endswith("/")
+        assert "/" in response.headers["Location"] and "find" not in response.headers["Location"]
 
 
 class TestFindRoute:
@@ -47,8 +47,16 @@ class TestFindRoute:
         response = client.get(
             "/find/John?input_type=english&distance_dimension=mp&gender="
         )
-        assert b"Similar Names to" in response.data
+        assert b"Similar to" in response.data
         assert b"John" in response.data
+
+    def test_script_mismatch_shows_disclaimer(self, client):
+        response = client.get("/find/%E8%8A%B3?input_type=english&distance_dimension=sound&gender=")
+        assert response.status_code == 200
+        assert b"Switch to" in response.data
+        assert b"Chinese" in response.data
+        assert b"Japanese" in response.data
+        assert b"script-mismatch" in response.data
 
 
 class TestGetSimilarNames:
@@ -109,6 +117,44 @@ class TestGetSimilarNames:
         assert len(results) == 10
         assert input_fields.ipa == "dʒɑn"
 
+    def test_french_input_type(self):
+        results, input_fields = get_similar_names("Jean", "french", "sound", "")
+        assert len(results) == 10
+        assert input_fields.ipa is not None
+        assert input_fields.mp is not None
+
+    def test_chinese_romanized_input(self):
+        results, input_fields = get_similar_names("Wei", "chinese", "sound", "")
+        assert len(results) == 10
+        assert input_fields.ipa == "wei̯"
+        assert input_fields.mp == "W"
+
+    def test_chinese_pinyin_xiao(self):
+        results, input_fields = get_similar_names("Xiao", "chinese", "sound", "")
+        assert input_fields.ipa == "ɕjau̯"
+        assert input_fields.mp == "SA"
+        names = [r[0] for r in results]
+        assert "Zoe" in names or "Zoey" in names
+
+    def test_chinese_character_fang(self):
+        results, input_fields = get_similar_names("芳", "chinese", "sound", "")
+        assert input_fields.ipa == "faŋ"
+        assert input_fields.mp == "FN"
+        names = [r[0] for r in results]
+        assert "Fawn" in names or "Fanny" in names
+
+    def test_korean_hangul_input(self):
+        results, input_fields = get_similar_names("김", "korean", "sound", "")
+        assert input_fields.ipa is not None
+        assert input_fields.mp is not None
+        assert len(results) == 10
+
+    def test_japanese_kanji_input(self):
+        results, input_fields = get_similar_names("田中", "japanese", "sound", "")
+        assert input_fields.ipa == "tɑˈnɑkə"
+        assert input_fields.mp == "TNK"
+        assert len(results) == 10
+
 
 class TestTurkishNameSnapshots:
     def test_cemre_turkish_mp(self):
@@ -117,7 +163,7 @@ class TestTurkishNameSnapshots:
         names = [r[0] for r in results]
         assert names == [
             "Jamar", "Jamir", "Jamari", "Jamarion", "Jeanmarie",
-            "Hjalmar", "Hjalmer", "Jamie", "Jayme", "Jamie",
+            "Hjalmar", "Hjalmer", "Jamie", "Jayme", "Jami",
         ]
 
     def test_mehmet_turkish_mp_boy(self):

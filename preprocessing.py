@@ -33,8 +33,10 @@ def create_database(csv_file, db_file):
     with open(csv_file, 'r') as file:
         reader = csv.reader(file)
         next(reader)  # Skip header
-        total_rows = sum(1 for row in file)
-        file.seek(0)  # Reset file pointer for iteration
+        total_rows = sum(1 for row in reader)
+    with open(csv_file, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header
         for row in tqdm(reader, total=total_rows, desc="Processing CSV"):
             name = row[1]
             gender = row[3]

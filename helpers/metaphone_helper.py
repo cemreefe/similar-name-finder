@@ -16,6 +16,8 @@ import re
 
 # Dictionary mapping IPA sounds to their closest English sound equivalents
 IPA_TO_ENGLISH = {
+    'tɕʰ': 'ch', 'tɕ': 'ch', 'ʰ': '', '̯': '', 'ɹ̩': '', '̩': '', 'ŋ': 'ng',
+    'x': 'h',
     'j': 'y',
     'ɑ': 'a', 'æ': 'ae', 'ɐ': 'a', 'ɒ': 'o', 'ɔ': 'o', 'ɕ': 'sh', 'ç': 'sh', 'ð': 'th',
     'ɘ': 'e', 'ə': 'e', 'ɚ': 'er', 'ɛ': 'e', 'ɜ': 'er', 'ɝ': 'er', 'ɞ': 'e', 'ɟ': 'j',
