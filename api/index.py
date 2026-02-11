@@ -296,9 +296,17 @@ def _product_url(path: str, name: str | None = None) -> str:
     if name and name.strip():
         base = base + '/find/' + quote(name.strip(), safe='')
     lang = _get_lang()
-    if lang == 'en':
-        return base
-    return base + ('&' if '?' in base else '?') + urlencode({'lang': lang})
+    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    distance_dimension = request.args.get('distance_dimension') or 'sound'
+    if distance_dimension not in ('sound', 'mp', 'ipa'):
+        distance_dimension = 'sound'
+    gender = request.args.get('gender') or ''
+    params = {'input_type': input_type, 'distance_dimension': distance_dimension}
+    if lang != 'en':
+        params['lang'] = lang
+    if gender:
+        params['gender'] = gender
+    return base + ('&' if '?' in base else '?') + urlencode(params)
 
 
 def _product_urls(input_name: str = '') -> dict:
