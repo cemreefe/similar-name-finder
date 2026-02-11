@@ -13,6 +13,7 @@ Here's how it works:
 """
 
 import re
+import unicodedata
 
 # Dictionary mapping IPA sounds to their closest English sound equivalents
 IPA_TO_ENGLISH = {
@@ -27,10 +28,10 @@ IPA_TO_ENGLISH = {
     'ɳ': 'n', 'ɴ': 'n', 'ɵ': 'o', 'ɶ': 'o', 'ɸ': 'f', 'ɹ': 'r', 'ɺ': 'r', 'ɻ': 'r',
     'ɼ': 'r', 'ɽ': 'r', 'ɾ': 'r', 'ɿ': 'r', 'ʀ': 'r', 'ʁ': 'r', 'ʂ': 'sh', 'ʃ': 'sh',
     'ʄ': 'j', 'ʅ': 'ng', 'ʆ': 'n', 'ʇ': 'n', 'ʈ': 't', 'ʉ': 'u', 'ʊ': 'u', 'ʋ': 'v',
-    'ʌ': 'a', 'ʍ': 'wh', 'ʎ': 'l', 'ʏ': 'y', 'ʐ': 'r', 'd͡ʒ': 'j', 'ʑ': 'z', 'ʒ': 'zh', 
+    'ʌ': 'a', 'ʍ': 'wh', 'ʎ': 'l', 'ʏ': 'y', 'ʐ': 'r', 'd͡ʒ': 'J', 'ʑ': 'z', 'ʒ': 'zh', 
     'ʓ': 'zh', 'ʔ': '', 'ʕ': 'h', 'ʖ': 'r', 'ʗ': 'r', 'ʘ': 'o', 'ʙ': 'b', 'ʚ': 'h', 'ʛ': 'g',
     'ʜ': 'h', 'ʝ': 'y', 'ʞ': 'k', 'ʟ': 'l', 'ʠ': 'q', 'ʡ': 'g', 'ʢ': 'n', 'ʣ': 'z',
-    'ʤ': 'j', 'ʥ': 'j', 'ʦ': 'ts', 'ʧ': 'ch', 'ʨ': 'ch', 'ʩ': 'r', 'ʪ': 'l', 'ʫ': 'l',
+    'ʤ': 'J', 'ʥ': 'j', 'ʦ': 'ts', 'ʧ': 'ch', 'ʨ': 'ch', 'ʩ': 'r', 'ʪ': 'l', 'ʫ': 'l',
     'ʬ': 'l', 'ʭ': 'w', 'ʮ': 'h', 'ʯ': 'n', 'ˀ': '', 'ˁ': '', 'ˆ': '', 'ˈ': '', 'ˌ': '',
     'ˍ': '', 'ˎ': '', 'ˏ': '', 'ː': '', 'ˑ': '', 'ˠ': '', 'ˡ': '', 'ˢ': '', 'ˣ': '',
     'ˤ': '', '˥': '', '˦': '', '˧': '', '˨': '', '˩': '', 'ˮ': '', 'ˬ': '', 'ˈ': '',
@@ -128,8 +129,10 @@ def map_ipa_to_english(ipa_str):
         str: The phonetic transcription of the input IPA string in English sounds.
     """
     result = ipa_str
-    for ipa, english in IPA_TO_ENGLISH.items():
+    for ipa, english in sorted(IPA_TO_ENGLISH.items(), key=lambda x: -len(x[0])):
         result = result.replace(ipa, english)
+    result = unicodedata.normalize('NFD', result)
+    result = ''.join(c for c in result if unicodedata.category(c) != 'Mn')
     return result
 
 def convert_to_metaphone(phonetic_str):
@@ -153,7 +156,8 @@ def convert_to_metaphone(phonetic_str):
 
 def map_ipa_to_metaphone(ipa_str):
     mapped_to_en = map_ipa_to_english(ipa_str)
-    return convert_to_metaphone(mapped_to_en)
+    code = convert_to_metaphone(mapped_to_en)
+    return ''.join(c for c in code if c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0 ')
 
 
 def turkish_to_ipa(text: str) -> str:

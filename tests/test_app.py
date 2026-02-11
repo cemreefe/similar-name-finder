@@ -156,6 +156,24 @@ class TestGetSimilarNames:
         assert len(results) == 10
 
 
+class TestMetaphoneOutput:
+    """MP must only contain plain ASCII capital letters A-Z, digit 0, and space."""
+    _VALID_MP_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0 ')
+
+    @pytest.mark.parametrize('name,input_type', [
+        ('cemre', 'english'), ('cemre', 'turkish'), ('cemre', 'french'),
+        ('Jean', 'french'), ('Marie', 'french'), ('François', 'french'),
+        ('Ayşe', 'turkish'), ('Mehmet', 'turkish'), ('Cemre', 'turkish'),
+        ('John', 'english'), ('Mary', 'english'), ('Wei', 'chinese'),
+        ('四川', 'chinese'), ('김民', 'korean'), ('田中', 'japanese'), ('Maria', 'filipino'),
+    ])
+    def test_mp_only_plain_capitals(self, name, input_type):
+        results, input_fields = get_similar_names(name, input_type, 'sound', '')
+        assert input_fields.mp is not None
+        for c in input_fields.mp:
+            assert c in self._VALID_MP_CHARS, f'MP {repr(input_fields.mp)} has invalid char {repr(c)} for {name}/{input_type}'
+
+
 class TestTurkishNameSnapshots:
     def test_cemre_turkish_mp(self):
         results, input_fields = get_similar_names("Cemre", "turkish", "mp", "")

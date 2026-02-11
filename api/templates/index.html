@@ -43,6 +43,21 @@
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-5BQYC3C8BL');</script>
 </head>
 <body>
+    <nav class="ui-lang-dropdown" aria-label="Interface language">
+        <button type="button" class="ui-lang-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Interface language" id="uiLangTrigger">
+            <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(lang, '🌐') }}</span>
+            <span class="ui-lang-chevron">▼</span>
+        </button>
+        <div class="ui-lang-menu" id="uiLangMenu" role="menu" hidden>
+            {% for code, label, url in lang_links %}
+            <a href="{{ url }}" role="menuitem" class="ui-lang-option{% if lang == code %} active{% endif %}">
+                <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(code, '🌐') }}</span>
+                <span class="ui-lang-label">{{ label }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </nav>
+
     <main class="page">
         <header class="header">
             <h1>{{ t.title }}</h1>
@@ -51,11 +66,6 @@
                 <a href="https://www.buymeacoffee.com/cemreefe" target="_blank" rel="noopener" class="coffee-btn">☕️ {{ t.coffee }}</a>
                 <p class="credit-by">{{ t.made_by }} <a href="https://cemrekarakas.com">cemre</a></p>
             </div>
-            <nav class="lang-switcher" aria-label="Language">
-                {% for code, label, url in lang_links %}
-                <a href="{{ url }}" class="lang-link{% if lang == code %} active{% endif %}">{{ label }}</a>
-                {% endfor %}
-            </nav>
         </header>
 
         <form id="nameForm" class="form" method="GET" action="/find/{{ input_name|default('') }}">
@@ -199,6 +209,23 @@
             navigator.clipboard.writeText(text);
         }
     }
+
+    (function() {
+        var trigger = document.getElementById('uiLangTrigger');
+        var menu = document.getElementById('uiLangMenu');
+        if (trigger && menu) {
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var open = menu.hidden;
+                menu.hidden = !open;
+                trigger.setAttribute('aria-expanded', open);
+            });
+            document.addEventListener('click', function() {
+                menu.hidden = true;
+                trigger.setAttribute('aria-expanded', 'false');
+            });
+        }
+    })();
 
     (function() {
         var select = document.getElementById('input_type');
