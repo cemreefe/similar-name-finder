@@ -68,6 +68,14 @@ TRANSLATIONS = {
         'seo_variety': 'Variety of Input Options: Choose from different input types, including English spelling, Turkish spelling, IPA, or Metaphone.',
         'seo_fast': 'Fast and Easy: Our user-friendly interface makes it simple to enter a name and find similar names in just a few clicks.',
         'seo_conclusion': "Whether you're looking for the English version of your name, searching for names with similar phonetic qualities, or exploring gender-specific names, the Name Finder tool is designed to make your search easier and more effective. With a variety of input options and powerful phonetic algorithms, you can explore a wide range of names and find those that closely match your preferences. Start discovering your perfect name today with our intuitive and comprehensive Name Finder tool.",
+        'ad_banner_english_title': 'English Names',
+        'ad_banner_english_desc': 'Find similar names from our English database',
+        'ad_banner_arabic_title': 'Arabic Names',
+        'ad_banner_arabic_desc': 'Find similar names from our Arabic database',
+        'ad_banner_korean_title': 'Korean Names',
+        'ad_banner_korean_desc': 'Find similar names from our K-pop database',
+        'ad_banner_cta': 'Try it →',
+        'chatgpt_prompt': 'What is the meaning and origin of the English name {name}, and who are some notable people with this name?',
     },
     'tr': {
         'title': 'Benzer İsim Bulucu',
@@ -128,6 +136,14 @@ TRANSLATIONS = {
         'seo_variety': 'Çeşitli giriş seçenekleri',
         'seo_fast': 'Basit ve hızlı arama',
         'seo_conclusion': 'İsminize benzer İngilizce isimleri hemen bulun.',
+        'ad_banner_english_title': 'İngilizce İsimler',
+        'ad_banner_english_desc': 'İngilizce veritabanımızdan benzer isimler bulun',
+        'ad_banner_arabic_title': 'Arapça İsimler',
+        'ad_banner_arabic_desc': 'Arapça veritabanımızdan benzer isimler bulun',
+        'ad_banner_korean_title': 'Korece İsimler',
+        'ad_banner_korean_desc': 'K-pop veritabanımızdan benzer isimler bulun',
+        'ad_banner_cta': 'Dene →',
+        'chatgpt_prompt': 'İngilizce isim {name}ın anlamı ve kökeni nedir, bu isimle bilinen ünlü kişiler kimlerdir?',
     },
     'zh': {
         'title': '相似名字查找器',
@@ -188,6 +204,14 @@ TRANSLATIONS = {
         'seo_variety': '多种输入方式',
         'seo_fast': '操作简单，快速查找',
         'seo_conclusion': '立即开始，发现与您名字最相似的英文名字。',
+        'ad_banner_english_title': '英文名字',
+        'ad_banner_english_desc': '从我们的英文名字库查找相似名字',
+        'ad_banner_arabic_title': '阿拉伯名字',
+        'ad_banner_arabic_desc': '从我们的阿拉伯名字库查找相似名字',
+        'ad_banner_korean_title': '韩语名字',
+        'ad_banner_korean_desc': '从我们的K-pop数据库查找相似名字',
+        'ad_banner_cta': '试试 →',
+        'chatgpt_prompt': '英文名字{name}的含义和起源是什么？有哪些知名人物叫这个名字？',
     },
     'ko': {
         'title': '유사 이름 찾기',
@@ -248,6 +272,14 @@ TRANSLATIONS = {
         'seo_variety': '다양한 입력 방식',
         'seo_fast': '간단하고 빠른 검색',
         'seo_conclusion': '지금 바로 이름과 가장 유사한 영어 이름을 찾아보세요.',
+        'ad_banner_english_title': '영어 이름',
+        'ad_banner_english_desc': '영어 데이터베이스에서 비슷한 이름 찾기',
+        'ad_banner_arabic_title': '아랍어 이름',
+        'ad_banner_arabic_desc': '아랍어 데이터베이스에서 비슷한 이름 찾기',
+        'ad_banner_korean_title': '한국어 이름',
+        'ad_banner_korean_desc': 'K-pop 데이터베이스에서 비슷한 이름 찾기',
+        'ad_banner_cta': '시도하기 →',
+        'chatgpt_prompt': '영어 이름 {name}의 의미와 유래는 무엇이며, 이 이름을 가진 유명인은 누구인가요?',
     },
     'fr': {
         'title': 'Similaires de Noms',
@@ -308,6 +340,14 @@ TRANSLATIONS = {
         'seo_variety': 'Plusieurs modes d\'entrée',
         'seo_fast': 'Simple et rapide',
         'seo_conclusion': 'Découvrez dès maintenant les noms anglais les plus proches du vôtre.',
+        'ad_banner_english_title': 'Noms Anglais',
+        'ad_banner_english_desc': 'Trouvez des noms similaires dans notre base anglaise',
+        'ad_banner_arabic_title': 'Noms Arabes',
+        'ad_banner_arabic_desc': 'Trouvez des noms similaires dans notre base arabe',
+        'ad_banner_korean_title': 'Noms Coréens',
+        'ad_banner_korean_desc': 'Trouvez des noms similaires dans notre base K-pop',
+        'ad_banner_cta': 'Essayer →',
+        'chatgpt_prompt': "Quel est le sens et l'origine du nom anglais {name}, et quelles sont les personnalités notables portant ce nom ?",
     },
     'fil': {
         'title': 'Maghanap ng Katulad na Pangalan',
@@ -368,6 +408,14 @@ TRANSLATIONS = {
         'seo_variety': 'Maraming mode ng input',
         'seo_fast': 'Simple at mabilis',
         'seo_conclusion': 'Simulan nang hanapin ang mga pangalang Ingles na katulad ng iyong pangalan.',
+        'ad_banner_english_title': 'Pangalang Ingles',
+        'ad_banner_english_desc': 'Maghanap ng katulad na pangalan mula sa aming database ng Ingles',
+        'ad_banner_arabic_title': 'Pangalang Arabe',
+        'ad_banner_arabic_desc': 'Maghanap ng katulad na pangalan mula sa aming database ng Arabe',
+        'ad_banner_korean_title': 'Pangalang Koreano',
+        'ad_banner_korean_desc': 'Maghanap ng katulad na pangalan mula sa aming database ng K-pop',
+        'ad_banner_cta': 'Subukan →',
+        'chatgpt_prompt': 'Ano ang kahulugan at pinagmulan ng pangalang Ingles na {name}, at sino ang mga kilalang tao na may ganitong pangalan?',
     },
     'ja': {
         'title': '似た名前検索',
@@ -428,6 +476,14 @@ TRANSLATIONS = {
         'seo_variety': '複数の入力方式',
         'seo_fast': 'シンプルで素早い検索',
         'seo_conclusion': '今すぐ名前に似た英語名を検索してみましょう。',
+        'ad_banner_english_title': '英語の名前',
+        'ad_banner_english_desc': '英語データベースから似た名前を検索',
+        'ad_banner_arabic_title': 'アラビア語の名前',
+        'ad_banner_arabic_desc': 'アラビア語データベースから似た名前を検索',
+        'ad_banner_korean_title': '韓国語の名前',
+        'ad_banner_korean_desc': 'K-popデータベースから似た名前を検索',
+        'ad_banner_cta': '試す →',
+        'chatgpt_prompt': '英語の名前{name}の意味と由来は何ですか？この名前の有名人は誰ですか？',
     },
 }
 
@@ -491,6 +547,131 @@ ARABIC_PAGE_TRANSLATIONS = {
         'seo_conclusion': 'Find similar Arabic names in seconds.',
         'coffee': 'Buy me a coffee',
         'made_by': 'Made by',
+        'chatgpt_prompt': 'What is the meaning and origin of the Arabic name {name}, and who are some notable people with this name?',
+    },
+    'tr': {
+        'title': 'Arapça İsim Bulucu',
+        'tagline': 'İsminizin Arapça benzerini bulun',
+        'chatgpt_prompt': 'Arapça isim {name}ın anlamı ve kökeni nedir, bu isimle bilinen ünlü kişiler kimlerdir?',
+    },
+    'zh': {
+        'title': '相似阿拉伯名字查找器',
+        'tagline': '查找相似的阿拉伯名字',
+        'chatgpt_prompt': '阿拉伯名字{name}的含义和起源是什么？有哪些知名人物叫这个名字？',
+    },
+    'ko': {
+        'title': '유사한 아랍어 이름 찾기',
+        'tagline': '비슷한 아랍어 이름 찾기',
+        'chatgpt_prompt': '아랍어 이름 {name}의 의미와 유래는 무엇이며, 이 이름을 가진 유명인은 누구인가요?',
+    },
+    'fr': {
+        'title': 'Similaires de Noms Arabes',
+        'tagline': 'Trouvez des noms arabes similaires',
+        'chatgpt_prompt': "Quel est le sens et l'origine du nom arabe {name}, et quelles sont les personnalités notables portant ce nom ?",
+    },
+    'fil': {
+        'title': 'Maghanap ng Katulad na Arabic Names',
+        'tagline': 'Maghanap ng katulad na pangalang Arabe',
+        'chatgpt_prompt': 'Ano ang kahulugan at pinagmulan ng pangalang Arabe na {name}, at sino ang mga kilalang tao na may ganitong pangalan?',
+    },
+    'ja': {
+        'title': '似たアラビア語の名前検索',
+        'tagline': '似たアラビア語の名前を見つける',
+        'chatgpt_prompt': 'アラビア語の名前{name}の意味と由来は何ですか？この名前の有名人は誰ですか？',
+    },
+}
+
+KOREAN_PAGE_TRANSLATIONS = {
+    'en': {
+        'title': 'Similar Korean Names Finder',
+        'tagline': 'Find similar Korean names',
+        'name_placeholder': 'Enter a name',
+        'input_language': 'Input language',
+        'compare_by': 'Compare by',
+        'compare_tooltip': "Sound matches names by how they're pronounced. Spelling matches by how they're written.",
+        'gender': 'Gender',
+        'any': 'Any',
+        'male': 'Male',
+        'female': 'Female',
+        'sound': 'Sound',
+        'spelling': 'Spelling',
+        'submit': 'Find similar names',
+        'similar_to': 'Similar to {name}',
+        'share': 'Share',
+        'learn_more': 'Learn more',
+        'page_title': 'Find Similar Korean Names',
+        'meta_description': 'Find Korean names similar to yours. Search for phonetically similar names from our K-pop idols database.',
+        'seo_title': 'Find Similar Korean Names',
+        'seo_intro': 'Looking for Korean names that sound or look similar to your name? Enter any name and we\'ll find the closest matches from our database of K-pop stage names.',
+        'seo_find_title': 'How it works',
+        'seo_find': 'Enter a name in any script or romanization. We compare it phonetically against thousands of Korean names to find the best matches.',
+        'seo_phonetic_title': 'Phonetic similarity',
+        'seo_phonetic': 'We use Metaphone and IPA to compare how names sound.',
+        'seo_transcription_title': 'IPA & Metaphone',
+        'seo_transcription': 'Advanced users can enter IPA or Metaphone directly for precise control.',
+        'seo_gender_title': 'Filter by gender',
+        'seo_gender': 'Filter results to male or female names only.',
+        'seo_how': 'Supported input types:',
+        'seo_english': 'English / Romanized spelling',
+        'seo_turkish': 'Turkish spelling',
+        'seo_chinese': 'Chinese spelling',
+        'seo_ipa': 'IPA (International Phonetic Alphabet)',
+        'seo_metaphone': 'Metaphone encoding',
+        'advanced_phonetic_toggle': 'Enable IPA & Metaphone search',
+        'input_ipa': 'IPA',
+        'input_mp': 'Metaphone',
+        'input_english': 'English',
+        'input_turkish': 'Turkish',
+        'input_chinese': 'Chinese',
+        'input_korean': 'Korean',
+        'input_french': 'French',
+        'input_filipino': 'Filipino',
+        'input_japanese': 'Japanese',
+        'input_encoding': 'Your encoding',
+        'result_mp': 'MP',
+        'script_mismatch': 'Your input appears to be in {script}. Switch for better results.',
+        'script_mismatch_multi': 'Your input appears to be in {scripts}. Switch for better results.',
+        'script_mismatch_cta': 'Switch to {script}',
+        'seo_how_end': 'Choose your input type and we\'ll find the most similar Korean names.',
+        'seo_why': 'Explore Korean names that sound or look like your own.',
+        'seo_accuracy': 'Phonetic matching based on pronunciation',
+        'seo_personalization': 'Filter by gender',
+        'seo_variety': 'Multiple input modes',
+        'seo_fast': 'Fast and easy search',
+        'seo_conclusion': 'Find similar Korean names in seconds.',
+        'coffee': 'Buy me a coffee',
+        'made_by': 'Made by',
+        'chatgpt_prompt': 'What is the meaning and origin of the Korean name {name}, and who are some notable people with this name?',
+    },
+    'tr': {
+        'title': 'Korece İsim Bulucu',
+        'tagline': 'İsminizin Korece benzerini bulun',
+        'chatgpt_prompt': 'Korece isim {name}ın anlamı ve kökeni nedir, bu isimle bilinen ünlü kişiler kimlerdir?',
+    },
+    'zh': {
+        'title': '相似韩语名字查找器',
+        'tagline': '查找相似的韩语名字',
+        'chatgpt_prompt': '韩语名字{name}的含义和起源是什么？有哪些知名人物叫这个名字？',
+    },
+    'ko': {
+        'title': '유사한 한국어 이름 찾기',
+        'tagline': '비슷한 한국어 이름 찾기',
+        'chatgpt_prompt': '한국어 이름 {name}의 의미와 유래는 무엇이며, 이 이름을 가진 유명인은 누구인가요?',
+    },
+    'fr': {
+        'title': 'Similaires de Noms Coréens',
+        'tagline': 'Trouvez des noms coréens similaires',
+        'chatgpt_prompt': "Quel est le sens et l'origine du nom coréen {name}, et quelles sont les personnalités notables portant ce nom ?",
+    },
+    'fil': {
+        'title': 'Maghanap ng Katulad na Korean Names',
+        'tagline': 'Maghanap ng katulad na pangalang Koreano',
+        'chatgpt_prompt': 'Ano ang kahulugan at pinagmulan ng pangalang Koreano na {name}, at sino ang mga kilalang tao na may ganitong pangalan?',
+    },
+    'ja': {
+        'title': '似た韓国語の名前検索',
+        'tagline': '似た韓国語の名前を見つける',
+        'chatgpt_prompt': '韓国語の名前{name}の意味と由来は何ですか？この名前の有名人は誰ですか？',
     },
 }
 
@@ -500,6 +681,14 @@ def get_translations(lang: str) -> dict:
 
 
 def get_arabic_page_translations(lang: str) -> dict:
-    return ARABIC_PAGE_TRANSLATIONS.get(lang, ARABIC_PAGE_TRANSLATIONS['en'])
+    base = TRANSLATIONS.get(lang, TRANSLATIONS['en'])
+    page = ARABIC_PAGE_TRANSLATIONS.get(lang, ARABIC_PAGE_TRANSLATIONS['en'])
+    return {**base, **page}
+
+
+def get_korean_page_translations(lang: str) -> dict:
+    base = TRANSLATIONS.get(lang, TRANSLATIONS['en'])
+    page = KOREAN_PAGE_TRANSLATIONS.get(lang, KOREAN_PAGE_TRANSLATIONS['en'])
+    return {**base, **page}
 
 

@@ -155,7 +155,7 @@ body {
 
 .three-column {
     display: grid;
-    grid-template-columns: 11rem 1fr 11rem;
+    grid-template-columns: 11rem 1fr;
     gap: 2rem;
     align-items: start;
     max-width: 55rem;
@@ -168,15 +168,25 @@ body {
 
 .column-center {
     min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr 11rem;
+    gap: 2rem;
+    align-items: start;
 }
 
-.column-right {
+.column-center .page {
+    grid-column: 1;
+}
+
+.column-center .sidebar {
+    grid-column: 2;
+    grid-row: 1 / -1;
     position: sticky;
     top: 4rem;
 }
 
-.sidebar {
-    min-width: 0;
+.column-center .content {
+    grid-column: 1;
 }
 
 @media (max-width: 768px) {
@@ -188,11 +198,22 @@ body {
         display: none;
     }
 
-    .sidebar {
+    .column-center {
+        grid-template-columns: 1fr;
+    }
+
+    .column-center .sidebar {
+        grid-column: 1;
+        grid-row: auto;
+        position: static;
         width: 100%;
         max-width: 20rem;
         margin: 0 auto;
     }
+}
+
+.ad-banner + .ad-banner {
+    margin-top: 0.75rem;
 }
 
 .ad-banner {
@@ -707,4 +728,102 @@ body.arabic-theme .advanced-toggle.on {
     background: rgba(5, 150, 105, 0.2);
     border-color: #047857;
     color: #065f46;
+}
+
+body.korean-theme {
+    background: linear-gradient(160deg, #fef2f2 0%, #fff1f2 50%, #ffe4e6 100%);
+}
+
+body.korean-theme .header h1 {
+    background: linear-gradient(120deg, #0f172a 0%, #9f1239 50%, #be123c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body.korean-theme .form input[type="text"]:focus {
+    border-color: #e11d48;
+    box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
+}
+
+body.korean-theme .form button[type="submit"] {
+    background: #be123c;
+    box-shadow: 0 4px 14px rgba(190, 18, 60, 0.35);
+}
+
+body.korean-theme .form button[type="submit"]:hover {
+    box-shadow: 0 6px 20px rgba(190, 18, 60, 0.45);
+}
+
+body.korean-theme .info-tooltip:hover .info {
+    color: #e11d48;
+}
+
+body.korean-theme .options-grid select:focus {
+    border-color: #e11d48;
+}
+
+body.korean-theme .ui-lang-option:hover {
+    background: #fff1f2;
+    color: #be123c;
+}
+
+body.korean-theme .ui-lang-option.active {
+    background: rgba(190, 18, 60, 0.1);
+    color: #be123c;
+}
+
+body.korean-theme .ad-banner {
+    background: linear-gradient(135deg, rgba(190, 18, 60, 0.1) 0%, rgba(190, 18, 60, 0.05) 100%);
+    border-color: rgba(190, 18, 60, 0.25);
+}
+
+body.korean-theme .ad-banner:hover {
+    border-color: rgba(190, 18, 60, 0.5);
+    box-shadow: 0 4px 12px rgba(190, 18, 60, 0.15);
+}
+
+body.korean-theme .ad-banner-cta {
+    color: #be123c;
+}
+
+body.korean-theme .name-item:hover {
+    border-color: #fecdd3;
+    box-shadow: 0 2px 8px rgba(190, 18, 60, 0.1);
+}
+
+body.korean-theme .name-item .learn-btn {
+    color: #be123c;
+    background: rgba(190, 18, 60, 0.08);
+}
+
+body.korean-theme .name-item .learn-btn:hover {
+    background: rgba(190, 18, 60, 0.15);
+    color: #9f1239;
+}
+
+body.korean-theme .name-item .share-btn {
+    color: #be123c;
+    background: rgba(190, 18, 60, 0.1);
+}
+
+body.korean-theme .name-item .share-btn:hover {
+    background: rgba(190, 18, 60, 0.2);
+    color: #9f1239;
+}
+
+body.korean-theme .advanced-toggle {
+    color: #be123c;
+    background: rgba(190, 18, 60, 0.1);
+}
+
+body.korean-theme .advanced-toggle:hover {
+    background: rgba(190, 18, 60, 0.15);
+    border-color: rgba(190, 18, 60, 0.5);
+}
+
+body.korean-theme .advanced-toggle.on {
+    background: rgba(190, 18, 60, 0.2);
+    border-color: #be123c;
+    color: #9f1239;
 }

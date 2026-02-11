@@ -35,14 +35,14 @@
         "@type": "WebApplication",
         "name": "{{ t.title }}",
         "description": "{{ t.meta_description }}",
-        "url": "https://namefinder.dutl.uk/my-name-in-arabic/",
+        "url": "https://namefinder.dutl.uk/my-name-in-korean/",
         "applicationCategory": "UtilitiesApplication"
     }
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5BQYC3C8BL"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-5BQYC3C8BL');</script>
 </head>
-<body class="arabic-theme">
+<body class="korean-theme">
     <nav class="ui-lang-dropdown" aria-label="Interface language">
         <button type="button" class="ui-lang-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Interface language" id="uiLangTrigger">
             <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(lang, '🌐') }}</span>
@@ -71,7 +71,7 @@
             </div>
         </header>
 
-        <form id="nameForm" class="form" method="GET" action="/my-name-in-arabic/find/{{ input_name|default('') }}">
+        <form id="nameForm" class="form" method="GET" action="/my-name-in-korean/find/{{ input_name|default('') }}">
             <input type="hidden" name="lang" value="{{ lang }}">
             <label for="name" class="visually-hidden">{{ t.name_placeholder }}</label>
             <input type="text" id="name" name="name" required placeholder="{{ t.name_placeholder }}" value="{{ input_name|default('') }}" autofocus>
@@ -144,7 +144,7 @@
             <ul class="name-list">
                 {% for name, name_gender, name_mp, name_ipa, ipa_alternatives, score, original_writing in similar_names %}
                 <li class="name-item">
-                    <span class="name">{{ name|title }}{% if original_writing %} <span class="original-writing" dir="rtl">{{ original_writing }}</span>{% endif %}</span>
+                    <span class="name">{{ name|title }}{% if original_writing %} <span class="original-writing" dir="ltr">{{ original_writing }}</span>{% endif %}</span>
                     <div class="name-item-meta">
                         {% if not gender %}<span class="gender">{{ name_gender }}</span>{% endif %}
                         <span class="result-mp" title="Metaphone"><code>{{ name_mp or '—' }}</code></span>
@@ -165,10 +165,10 @@
                 <span class="ad-banner-desc">{{ t.ad_banner_english_desc }}</span>
                 <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
             </a>
-            <a href="/my-name-in-korean/" class="ad-banner">
-                <span class="ad-banner-flag">🇰🇷</span>
-                <span class="ad-banner-title">{{ t.ad_banner_korean_title }}</span>
-                <span class="ad-banner-desc">{{ t.ad_banner_korean_desc }}</span>
+            <a href="/my-name-in-arabic/" class="ad-banner">
+                <span class="ad-banner-flag">🇸🇦</span>
+                <span class="ad-banner-title">{{ t.ad_banner_arabic_title }}</span>
+                <span class="ad-banner-desc">{{ t.ad_banner_arabic_desc }}</span>
                 <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
             </a>
         </aside>
@@ -210,7 +210,7 @@
     <script>
     function updateFormAction() {
         var name = document.getElementById('name').value;
-        document.getElementById('nameForm').action = '/my-name-in-arabic/find/' + encodeURIComponent(name || '');
+        document.getElementById('nameForm').action = '/my-name-in-korean/find/' + encodeURIComponent(name || '');
     }
     document.getElementById('name').addEventListener('input', updateFormAction);
     document.getElementById('name').addEventListener('keydown', function(e) {
@@ -223,7 +223,7 @@
     updateFormAction();
 
     function shareName(input, name) {
-        var text = input + "'s similar Arabic name is " + name + ". Find yours: https://namefinder.dutl.uk/my-name-in-arabic/";
+        var text = input + "'s similar Korean name is " + name + ". Find yours: https://namefinder.dutl.uk/my-name-in-korean/";
         if (navigator.share) {
             navigator.share({ title: '{{ t.title }}', text: text }).catch(function(){});
         } else {

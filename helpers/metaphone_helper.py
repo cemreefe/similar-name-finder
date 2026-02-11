@@ -160,6 +160,42 @@ def map_ipa_to_metaphone(ipa_str):
     return ''.join(c for c in code if c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0 ')
 
 
+def hangul_to_phonetic_romanization(text: str) -> str | None:
+    """Convert Hangul to pronunciation-aware romanization (avoids ghost letters like 'r' in Park)."""
+    if not any('\uac00' <= c <= '\ud7af' for c in text):
+        return None
+    try:
+        from koroman import romanize
+        text = text.strip()
+        if len(text) >= 2:
+            family = romanize(text[0]).lower()
+            given = romanize(text[1:]).lower()
+            return f"{family} {given}"
+        return romanize(text).lower()
+    except ImportError:
+        return None
+    except Exception:
+        return None
+
+
+def _normalize_korean_for_metaphone(romanized: str) -> str:
+    """Korean ㄱ is romanized as 'g' but is phonetically [k] at syllable onset; Metaphone treats g+e/i→J."""
+    words = romanized.split()
+    if words and words[0].startswith('g'):
+        words[0] = 'k' + words[0][1:]
+    return ' '.join(words)
+
+
+def hangul_to_metaphone(text: str):
+    """Generate Metaphone from Hangul using pronunciation-aware romanization."""
+    from metaphone import doublemetaphone
+    romanized = hangul_to_phonetic_romanization(text)
+    if romanized:
+        normalized = _normalize_korean_for_metaphone(romanized)
+        return doublemetaphone(normalized)[0]
+    return None
+
+
 def turkish_to_ipa(text: str) -> str:
     """Turkish orthography to IPA."""
     text = text.lower().strip()

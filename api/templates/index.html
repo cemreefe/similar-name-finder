@@ -148,7 +148,7 @@
                     <div class="name-item-meta">
                         {% if not gender %}<span class="gender">{{ name_gender }}</span>{% endif %}
                         <span class="result-mp" title="Metaphone"><code>{{ name_mp or '—' }}</code></span>
-                        <button type="button" class="learn-btn" data-name="{{ name }}" aria-label="{{ t.learn_more }}">{{ t.learn_more }}</button>
+                        <button type="button" class="learn-btn" data-name="{{ name }}"{% if original_writing %} data-original-writing="{{ original_writing }}"{% endif %} aria-label="{{ t.learn_more }}">{{ t.learn_more }}</button>
                         <button type="button" class="share-btn" data-input="{{ input_name }}" data-name="{{ name }}" aria-label="{{ t.share }}">{{ t.share }}</button>
                     </div>
                 </li>
@@ -158,6 +158,20 @@
         {% endif %}
 
         </main>
+        <aside class="sidebar">
+            <a href="/my-name-in-arabic/" class="ad-banner">
+                <span class="ad-banner-flag">🇸🇦</span>
+                <span class="ad-banner-title">{{ t.ad_banner_arabic_title }}</span>
+                <span class="ad-banner-desc">{{ t.ad_banner_arabic_desc }}</span>
+                <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
+            </a>
+            <a href="/my-name-in-korean/" class="ad-banner">
+                <span class="ad-banner-flag">🇰🇷</span>
+                <span class="ad-banner-title">{{ t.ad_banner_korean_title }}</span>
+                <span class="ad-banner-desc">{{ t.ad_banner_korean_desc }}</span>
+                <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
+            </a>
+        </aside>
         <article class="content">
         <h2>{{ t.seo_title }}</h2>
         <h3>{{ t.get('intro_title', 'Introduction') }}</h3>
@@ -191,14 +205,6 @@
         <p>{{ t.seo_conclusion }}</p>
         </article>
         </div>
-        <aside class="sidebar column-right">
-            <a href="/ar/" class="ad-banner">
-                <span class="ad-banner-flag">🇸🇦</span>
-                <span class="ad-banner-title">Arabic Names</span>
-                <span class="ad-banner-desc">Find similar names from our Arabic database</span>
-                <span class="ad-banner-cta">Try it →</span>
-            </a>
-        </aside>
     </div>
 
     <script>
@@ -225,8 +231,10 @@
         }
     }
 
-    function learnAboutName(name) {
-        var prompt = "What is the meaning and origin of the name " + name + ", and who are some notable people with this name?";
+    function learnAboutName(name, originalWriting) {
+        var namePart = originalWriting ? name + " (" + originalWriting + ")" : name;
+        var promptTemplate = {{ t.chatgpt_prompt|tojson }};
+        var prompt = promptTemplate.replace(/\{name\}/g, namePart);
         window.open("https://chatgpt.com/?q=" + encodeURIComponent(prompt), "_blank");
     }
 
@@ -234,7 +242,7 @@
         var learnBtn = e.target.closest('.learn-btn');
         if (learnBtn) {
             e.preventDefault();
-            learnAboutName(learnBtn.getAttribute('data-name') || '');
+            learnAboutName(learnBtn.getAttribute('data-name') || '', learnBtn.getAttribute('data-original-writing'));
         }
         var shareBtn = e.target.closest('.share-btn');
         if (shareBtn) {

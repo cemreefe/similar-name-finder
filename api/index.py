@@ -3,9 +3,9 @@ from enum import Enum
 from typing import assert_never
 from flask import Flask, render_template, request, redirect, url_for
 try:
-    from api.translations import get_translations, get_arabic_page_translations, LANGUAGES
+    from api.translations import get_translations, get_arabic_page_translations, get_korean_page_translations, LANGUAGES
 except ImportError:
-    from translations import get_translations, get_arabic_page_translations, LANGUAGES
+    from translations import get_translations, get_arabic_page_translations, get_korean_page_translations, LANGUAGES
 import sqlite3
 from metaphone import doublemetaphone
 import helpers.metaphone_helper as mhelp
@@ -19,6 +19,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _BASE_URL = 'https://namefinder.dutl.uk'
 _DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'names_database.db')
 _ARAB_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'arabnames_database.db')
+_KOREAN_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'korean_database.db')
 import re
 import unicodedata
 
@@ -101,16 +102,16 @@ def _encode_pinyin(name: str) -> NameRepr | None:
     return NameRepr(name, ipa=ipa, mp=mp)
 
 
-def _hangul_to_romanization(text: str) -> str | None:
+def _hangul_to_phonetic_romanization(text: str) -> str | None:
+    """Hangul to pronunciation-aware romanization for Metaphone (avoids ghost letters like 'r' in Park)."""
     if not any('\uac00' <= c <= '\ud7af' for c in text):
         return None
+    phon = mhelp.hangul_to_phonetic_romanization(text)
+    if phon:
+        return phon
     try:
         from korean_romanizer import Romanizer
-    except ImportError:
-        return None
-    try:
-        r = Romanizer(text)
-        return r.romanize().lower()
+        return Romanizer(text).romanize().lower()
     except Exception:
         return None
 
@@ -143,7 +144,7 @@ def _encode(name, input_type: InputType) -> NameRepr:
             encoded = _encode_pinyin(name)
             return encoded if encoded else _encode_romanized(name)
         case InputType.KOREAN:
-            romanized = _hangul_to_romanization(name)
+            romanized = _hangul_to_phonetic_romanization(name)
             if romanized:
                 enc = _encode_romanized(romanized)
                 return NameRepr(name, ipa=enc.ipa, mp=enc.mp)
@@ -427,6 +428,18 @@ def find_similar_names_pretty(input_name):
     )
 
 
+def _kr_lang_url(lang_code):
+    args = request.args.to_dict()
+    if lang_code == 'en':
+        args.pop('lang', None)
+    else:
+        args['lang'] = lang_code
+    args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    path = request.path if request.path.startswith('/my-name-in-korean/find') else '/my-name-in-korean/'
+    return path + ('?' + urlencode(args) if args else '')
+
+
 def _ar_lang_url(lang_code):
     args = request.args.to_dict()
     if lang_code == 'en':
@@ -435,11 +448,11 @@ def _ar_lang_url(lang_code):
         args['lang'] = lang_code
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
-    path = request.path if request.path.startswith('/ar/find') else '/ar'
+    path = request.path if request.path.startswith('/my-name-in-arabic/find') else '/my-name-in-arabic/'
     return path + ('?' + urlencode(args) if args else '')
 
 
-@app.route('/ar/')
+@app.route('/my-name-in-arabic/')
 def arabic_index():
     lang = _get_lang()
     t = get_arabic_page_translations(lang)
@@ -459,7 +472,7 @@ def arabic_index():
     )
 
 
-@app.route('/ar/find', methods=['GET'])
+@app.route('/my-name-in-arabic/find', methods=['GET'])
 def arabic_find_redirect():
     input_name = request.args.get('name')
     input_name = unquote(input_name or '')
@@ -477,7 +490,7 @@ def arabic_find_redirect():
     ))
 
 
-@app.route('/ar/find/<string:input_name>', methods=['GET'])
+@app.route('/my-name-in-arabic/find/<string:input_name>', methods=['GET'])
 def find_similar_arabic_names(input_name):
     input_name = unquote(input_name)
     lang = _get_lang()
@@ -521,6 +534,93 @@ def find_similar_arabic_names(input_name):
         lang=lang,
         languages=LANGUAGES,
         lang_links=[(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
+        script_mismatches=script_mismatches,
+        mismatch_cta_links=mismatch_cta_links,
+    )
+
+
+@app.route('/my-name-in-korean/')
+def korean_index():
+    lang = _get_lang()
+    t = get_korean_page_translations(lang)
+    lang_links = [(code, label, _kr_lang_url(code)) for code, (label, _) in LANGUAGES.items()]
+    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    return render_template(
+        'korean.html',
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=lang_links,
+        input_type=input_type,
+        distance_dimension=request.args.get('distance_dimension', 'sound'),
+        gender=request.args.get('gender', ''),
+        script_mismatches=[],
+        mismatch_cta_links=[],
+    )
+
+
+@app.route('/my-name-in-korean/find', methods=['GET'])
+def korean_find_redirect():
+    input_name = request.args.get('name')
+    input_name = unquote(input_name or '')
+    if not input_name:
+        lang = request.args.get('lang', 'en')
+        return redirect(url_for('korean_index', lang=lang, input_type=LANG_TO_INPUT_TYPE.get(lang, 'english')))
+    lang = _get_lang()
+    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    return redirect(url_for(
+        'find_similar_korean_names', input_name=input_name,
+        input_type=input_type,
+        distance_dimension=request.args.get('distance_dimension'),
+        gender=request.args.get('gender'),
+        lang=lang,
+    ))
+
+
+@app.route('/my-name-in-korean/find/<string:input_name>', methods=['GET'])
+def find_similar_korean_names(input_name):
+    input_name = unquote(input_name)
+    lang = _get_lang()
+    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    distance_dimension = request.args.get('distance_dimension') or 'sound'
+    gender = request.args.get('gender') or ''
+    t = get_korean_page_translations(lang)
+
+    similar_names, input_fields = get_similar_names(
+        input_name, input_type, distance_dimension, gender, db_path=_KOREAN_DB_PATH
+    )
+
+    script_mismatches = _get_script_mismatches(input_name, input_type)
+    mismatch_cta_links = []
+    for suggested_type in script_mismatches:
+        args = request.args.to_dict()
+        args['input_type'] = suggested_type
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(args) if args else '')))
+
+    result_names = ', '.join(n for n, *_ in similar_names[:5])
+    page_title = t['page_title']
+    meta_description = t['meta_description']
+    if input_name:
+        page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
+        meta_description = f"{t['similar_to'].format(name=input_name)}: {result_names}. {t['meta_description']}"
+
+    meta_image_url = f"{_BASE_URL}/og-image/{quote(input_name, safe='')}" if input_name else None
+
+    return render_template(
+        'korean.html',
+        input_name=input_name,
+        input_type=input_type,
+        input_fields=input_fields,
+        similar_names=similar_names,
+        distance_dimension=distance_dimension,
+        gender=gender,
+        page_title=page_title,
+        meta_description=meta_description,
+        meta_image_url=meta_image_url,
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _kr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
     )
