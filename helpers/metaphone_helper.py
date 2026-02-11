@@ -21,6 +21,7 @@ IPA_TO_ENGLISH = {
     'j': 'y',
     'ɑ': 'a', 'æ': 'ae', 'ɐ': 'a', 'ɒ': 'o', 'ɔ': 'o', 'ɕ': 'sh', 'ç': 'sh', 'ð': 'th',
     'ɘ': 'e', 'ə': 'e', 'ɚ': 'er', 'ɛ': 'e', 'ɜ': 'er', 'ɝ': 'er', 'ɞ': 'e', 'ɟ': 'j',
+    'ɑ̃': 'a', 'ɛ̃': 'e', 'ɔ̃': 'o', 'œ̃': 'e',
     'ɡ': 'gu', 'ɣ': 'h', 'ɤ': 'o', 'ɥ': 'h', 'ɦ': 'h', 'ɧ': 'ng', 'ɨ': 'i', 'ɪ': 'i',
     'ɫ': 'l', 'ɬ': 'l', 'ɭ': 'l', 'ɮ': 'l', 'ɯ': 'u', 'ɰ': 'w', 'ɱ': 'm', 'ɲ': 'n',
     'ɳ': 'n', 'ɴ': 'n', 'ɵ': 'o', 'ɶ': 'o', 'ɸ': 'f', 'ɹ': 'r', 'ɺ': 'r', 'ɻ': 'r',
@@ -188,6 +189,147 @@ def turkish_to_ipa(text: str) -> str:
             case _:
                 result.append(c)
     return ''.join(result)
+
+
+def french_to_ipa(text: str) -> str:
+    """French orthography to IPA."""
+    text = text.lower().strip()
+    result = []
+    soft_vowels = 'éèêëeiïîy'
+    i = 0
+    while i < len(text):
+        c = text[i]
+        next_c = text[i + 1] if i + 1 < len(text) else ''
+        next2 = text[i + 2] if i + 2 < len(text) else ''
+        next_soft = next_c in soft_vowels
+        if i + 3 <= len(text) and text[i:i+3] == 'eau':
+            result.append('o')
+            i += 3
+            continue
+        if i + 3 <= len(text) and text[i:i+3] == 'oin':
+            result.append('wɛ')
+            i += 3
+            continue
+        if i + 2 <= len(text):
+            two = text[i:i+2]
+            if two == 'ch':
+                result.append('ʃ')
+                i += 2
+                continue
+            if two == 'qu':
+                result.append('k')
+                i += 2
+                continue
+            if two == 'ph':
+                result.append('f')
+                i += 2
+                continue
+            if two == 'ou':
+                result.append('u')
+                i += 2
+                continue
+            if two == 'ai' and next2 == 'l' and (i + 3 >= len(text) or text[i+3] in ' e'):
+                result.append('aj')
+                i += 3
+                continue
+            if two == 'ai' or two == 'ay':
+                result.append('ɛ')
+                i += 2
+                continue
+            if two == 'ei':
+                result.append('ɛ')
+                i += 2
+                continue
+            if two == 'oi':
+                result.append('wa')
+                i += 2
+                continue
+            if two == 'au':
+                result.append('o')
+                i += 2
+                continue
+            if two == 'eu':
+                result.append('œ')
+                i += 2
+                continue
+            if two == 'œu':
+                result.append('œ')
+                i += 2
+                continue
+            if two == 'ui':
+                result.append('wi')
+                i += 2
+                continue
+            if two == 'gn':
+                result.append('ɲ')
+                i += 2
+                continue
+            if two == 'il' and (i + 2 >= len(text) or text[i+2] in ' e'):
+                result.append('j')
+                i += 2
+                continue
+        match c:
+            case 'ç':
+                result.append('s')
+            case 'à' | 'â' | 'ä':
+                result.append('ɑ')
+            case 'é' | 'è' | 'ê' | 'ë':
+                result.append('e')
+            case 'î' | 'ï':
+                result.append('i')
+            case 'ô' | 'ö':
+                result.append('o')
+            case 'ù' | 'û' | 'ü':
+                result.append('y')
+            case 'œ':
+                result.append('œ')
+            case 'æ':
+                result.append('ɛ')
+            case 'c':
+                result.append('s' if next_soft else 'k')
+            case 'g':
+                result.append('ʒ' if next_soft else 'ɡ')
+            case 'j':
+                result.append('ʒ')
+            case 'r':
+                result.append('ʁ')
+            case 'x':
+                result.append('ks')
+            case 'h':
+                pass
+            case _:
+                if c.isalpha():
+                    result.append(c)
+        i += 1
+    return _french_nasalize(''.join(result))
+
+
+def _french_nasalize(ipa: str) -> str:
+    """Replace vowel+n/m with nasal vowel (ɑ̃, ɛ̃, ɔ̃, œ̃) where n/m is not followed by vowel."""
+    out = []
+    i = 0
+    while i < len(ipa):
+        c = ipa[i]
+        nc = ipa[i + 1] if i + 1 < len(ipa) else ''
+        nnc = ipa[i + 2] if i + 2 < len(ipa) else ''
+        has_nasal_consonant = nc in ('n', 'm')
+        is_nasal_end = nnc == '' or nnc not in 'aeiouɑɛɔœ'
+        if c in 'aɑ' and has_nasal_consonant and is_nasal_end:
+            out.append('ɑ̃')
+            i += 2
+        elif c in 'eɛ' and has_nasal_consonant and is_nasal_end:
+            out.append('ɛ̃')
+            i += 2
+        elif c == 'o' and has_nasal_consonant and is_nasal_end:
+            out.append('ɔ̃')
+            i += 2
+        elif c in 'iyœ' and has_nasal_consonant and is_nasal_end:
+            out.append('œ̃')
+            i += 2
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
 
 # ipa_string = "ɪnˈtɝnæʃnəl fəˈnɛtɪk ˈælfəbɛt"
 # english_phonetic = map_ipa_to_english(ipa_string)

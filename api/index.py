@@ -1,8 +1,6 @@
-import pkg_resources  # noqa: F401 - required by epitran
-import threading
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, assert_never
+from typing import assert_never
 from flask import Flask, render_template, request, redirect, url_for
 try:
     from api.translations import get_translations, LANGUAGES
@@ -59,23 +57,6 @@ def _encode_romanized(name: str) -> NameRepr:
     ipa_result = ipa_list(normalized)
     ipa = ipa_result[0][0] if ipa_result else None
     mp = doublemetaphone(normalized)[0].upper() if doublemetaphone(normalized)[0] else None
-    return NameRepr(name, ipa=ipa, mp=mp)
-
-
-_epitran_cache: dict[str, Any] = {}
-
-
-def _get_epitran(lang_code: str):
-    from epitran import Epitran
-    if lang_code not in _epitran_cache:
-        _epitran_cache[lang_code] = Epitran(lang_code)
-    return _epitran_cache[lang_code]
-
-
-def _encode_epitran(name: str, lang_code: str) -> NameRepr:
-    ep = _get_epitran(lang_code)
-    ipa = ep.transliterate(name)
-    mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
     return NameRepr(name, ipa=ipa, mp=mp)
 
 
@@ -154,7 +135,9 @@ def _encode(name, input_type: InputType) -> NameRepr:
             mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
             return NameRepr(name, ipa=ipa, mp=mp)
         case InputType.FRENCH:
-            return _encode_epitran(name, 'fra-Latn')
+            ipa = mhelp.french_to_ipa(name)
+            mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
+            return NameRepr(name, ipa=ipa, mp=mp)
         case InputType.CHINESE:
             encoded = _encode_pinyin(name)
             return encoded if encoded else _encode_romanized(name)
@@ -201,16 +184,6 @@ def _spelling_score(input_name, name):
 
 
 app = Flask(__name__)
-
-
-def _preload_epitran():
-    from epitran import Epitran
-    for lang in ('tur-Latn', 'fra-Latn'):
-        if lang not in _epitran_cache:
-            _epitran_cache[lang] = Epitran(lang)
-
-
-threading.Thread(target=_preload_epitran, daemon=True).start()
 
 
 def _score(encoded, dim, name, name_mp, name_ipa):

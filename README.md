@@ -51,7 +51,6 @@ This Flask web application helps users find similar names based on phonetic simi
 
 - [Flask](https://flask.palletsprojects.com/) - Web framework used in the project.
 - [Metaphone](https://pypi.org/project/Metaphone/) - Library for phonetic encoding.
-- [Epitran](https://pypi.org/project/epitran/) - Library for transliterating text to IPA.
 - [NLTK](https://www.nltk.org/) - Library for natural language processing tasks.
 - [EngToIPA](https://github.com/mphilli/eng_to_ipa) - Library for converting English text to IPA phonetic transcription.
 
