@@ -1,3 +1,4 @@
+import pkg_resources  # noqa: F401 - required by epitran
 from dataclasses import dataclass
 from enum import Enum
 from typing import assert_never
