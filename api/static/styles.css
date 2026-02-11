@@ -12,6 +12,7 @@ body {
     padding: 1.5rem;
 }
 
+
 .page {
     max-width: 28rem;
     margin: 0 auto;
@@ -58,7 +59,7 @@ body {
 .ui-lang-dropdown {
     position: fixed;
     top: 1rem;
-    right: 1rem;
+    right: max(1.5rem, calc(50% - 18rem));
     z-index: 100;
 }
 
@@ -150,6 +151,93 @@ body {
     color: #64748b;
     font-size: 0.9375rem;
     margin: 0.25rem 0 0 0;
+}
+
+.three-column {
+    display: grid;
+    grid-template-columns: 11rem 1fr 11rem;
+    gap: 2rem;
+    align-items: start;
+    max-width: 55rem;
+    margin: 0 auto;
+}
+
+.column-left {
+    min-width: 0;
+}
+
+.column-center {
+    min-width: 0;
+}
+
+.column-right {
+    position: sticky;
+    top: 4rem;
+}
+
+.sidebar {
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .three-column {
+        grid-template-columns: 1fr;
+    }
+
+    .column-left {
+        display: none;
+    }
+
+    .sidebar {
+        width: 100%;
+        max-width: 20rem;
+        margin: 0 auto;
+    }
+}
+
+.ad-banner {
+    display: block;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(14, 165, 233, 0.04) 100%);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ad-banner:hover {
+    border-color: rgba(14, 165, 233, 0.4);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
+}
+
+.ad-banner-flag {
+    display: block;
+    font-size: 1.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.ad-banner-title {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: #1e293b;
+}
+
+.ad-banner-desc {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+    line-height: 1.35;
+}
+
+.ad-banner-cta {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #0284c7;
 }
 
 .form {
@@ -363,15 +451,24 @@ body {
 }
 
 .name-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 0.75rem;
+    align-items: start;
     padding: 0.75rem 1rem;
     margin-bottom: 0.5rem;
     background: #fff;
     border-radius: 10px;
     border: 1px solid #e2e8f0;
     transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.name-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    justify-self: end;
 }
 
 .name-item:hover {
@@ -382,27 +479,54 @@ body {
 .name-item .name {
     font-weight: 600;
     font-size: 1rem;
-    min-width: 6rem;
+    min-width: 0;
     color: #1e293b;
+}
+
+.name-item .original-writing {
+    font-weight: 400;
+    margin-left: 0.35rem;
+    color: #64748b;
+    white-space: nowrap;
 }
 
 .name-item .gender {
     font-size: 0.8125rem;
     color: #64748b;
     text-transform: capitalize;
+    min-width: 2.25rem;
 }
 
+.name-item .result-mp {
+    min-width: 4.5rem;
+}
+
+.name-item .learn-btn,
 .name-item .share-btn {
-    margin-left: auto;
     padding: 0.35rem 0.65rem;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #0284c7;
-    background: rgba(14, 165, 233, 0.1);
     border: none;
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
+}
+
+.name-item-meta .learn-btn {
+    margin-left: auto;
+    color: #64748b;
+    background: rgba(100, 116, 139, 0.1);
+}
+
+.name-item .learn-btn:hover {
+    background: rgba(100, 116, 139, 0.2);
+    color: #475569;
+}
+
+.name-item .share-btn {
+    margin-left: 0.25rem;
+    color: #0284c7;
+    background: rgba(14, 165, 233, 0.1);
 }
 
 .name-item .share-btn:hover {
@@ -484,4 +608,103 @@ body {
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
+}
+
+body.arabic-theme {
+    background: linear-gradient(160deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
+}
+
+body.arabic-theme .header h1 {
+    background: linear-gradient(120deg, #0f172a 0%, #14532d 50%, #006233 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body.arabic-theme .form input[type="text"]:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
+}
+
+body.arabic-theme .form button[type="submit"] {
+    background: #047857;
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+}
+
+body.arabic-theme .form button[type="submit"]:hover {
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.45);
+}
+
+body.arabic-theme .info-tooltip:hover .info {
+    color: #059669;
+}
+
+body.arabic-theme .options-grid select:focus {
+    border-color: #059669;
+}
+
+body.arabic-theme .ui-lang-option:hover {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+body.arabic-theme .ui-lang-option.active {
+    background: rgba(5, 150, 105, 0.1);
+    color: #047857;
+}
+
+body.arabic-theme .ad-banner {
+    background: linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+    border-color: rgba(5, 150, 105, 0.25);
+}
+
+body.arabic-theme .ad-banner:hover {
+    border-color: rgba(5, 150, 105, 0.5);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+
+body.arabic-theme .ad-banner-cta {
+    color: #047857;
+}
+
+body.arabic-theme .name-item:hover {
+    border-color: #a7f3d0;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.1);
+}
+
+body.arabic-theme .name-item .learn-btn {
+    color: #047857;
+    background: rgba(5, 150, 105, 0.08);
+}
+
+body.arabic-theme .name-item .learn-btn:hover {
+    background: rgba(5, 150, 105, 0.15);
+    color: #065f46;
+}
+
+body.arabic-theme .name-item .share-btn {
+    color: #047857;
+    background: rgba(5, 150, 105, 0.1);
+}
+
+body.arabic-theme .name-item .share-btn:hover {
+    background: rgba(5, 150, 105, 0.2);
+    color: #065f46;
+}
+
+body.arabic-theme .advanced-toggle {
+    color: #047857;
+    background: rgba(5, 150, 105, 0.1);
+    border-color: rgba(5, 150, 105, 0.3);
+}
+
+body.arabic-theme .advanced-toggle:hover {
+    background: rgba(5, 150, 105, 0.15);
+    border-color: rgba(5, 150, 105, 0.5);
+}
+
+body.arabic-theme .advanced-toggle.on {
+    background: rgba(5, 150, 105, 0.2);
+    border-color: #047857;
+    color: #065f46;
 }

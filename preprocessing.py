@@ -1,4 +1,5 @@
 import csv
+import os
 import sqlite3
 from tqdm import tqdm
 from metaphone import doublemetaphone
@@ -53,8 +54,46 @@ def create_database(csv_file, db_file):
     conn.close()
 
 
+def create_arabic_database(csv_file, db_file):
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS names (
+                        name TEXT,
+                        gender TEXT,
+                        phonetic_representation TEXT,
+                        ipa_transcription TEXT,
+                        ipa_alternatives TEXT,
+                        original_writing TEXT,
+                        PRIMARY KEY (name, gender)
+                    )''')
+
+    with open(csv_file, 'r', encoding='utf-8-sig') as file:
+        reader = csv.DictReader(file)
+        rows = list(reader)
+    for row in tqdm(rows, desc="Processing Arabic CSV"):
+        name = row['english_name'].strip()
+        arabic = row.get('arabic_name', '').strip()
+        gender = 'boy' if row.get('gender', 'm').lower() == 'm' else 'girl'
+        phonetic_repr = calculate_phonetic_representation(name)
+        ipa_transcription, ipa_alternatives = calculate_ipa_transcription(name)
+        try:
+            cursor.execute('''INSERT INTO names (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives, original_writing)
+                            VALUES (?, ?, ?, ?, ?, ?)''', (name, gender, phonetic_repr, ipa_transcription, ipa_alternatives, arabic or None))
+        except sqlite3.IntegrityError:
+            pass
+
+    conn.commit()
+    conn.close()
+
+
 if __name__ == "__main__":
     csv_file = "names.csv"
     db_file = "names_database.db"
     create_database(csv_file, db_file)
     print("Database created successfully.")
+
+    arab_csv = "datasets/arabic_names.csv"
+    arab_db = "arabnames_database.db"
+    if os.path.exists(arab_csv):
+        create_arabic_database(arab_csv, arab_db)
+        print("Arabic database created successfully.")

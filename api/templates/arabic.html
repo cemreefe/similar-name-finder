@@ -35,14 +35,14 @@
         "@type": "WebApplication",
         "name": "{{ t.title }}",
         "description": "{{ t.meta_description }}",
-        "url": "https://namefinder.dutl.uk",
+        "url": "https://namefinder.dutl.uk/ar/",
         "applicationCategory": "UtilitiesApplication"
     }
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5BQYC3C8BL"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-5BQYC3C8BL');</script>
 </head>
-<body>
+<body class="arabic-theme">
     <nav class="ui-lang-dropdown" aria-label="Interface language">
         <button type="button" class="ui-lang-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Interface language" id="uiLangTrigger">
             <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(lang, '🌐') }}</span>
@@ -71,7 +71,7 @@
             </div>
         </header>
 
-        <form id="nameForm" class="form" method="GET" action="/find/{{ input_name|default('') }}">
+        <form id="nameForm" class="form" method="GET" action="/ar/find/{{ input_name|default('') }}">
             <input type="hidden" name="lang" value="{{ lang }}">
             <label for="name" class="visually-hidden">{{ t.name_placeholder }}</label>
             <input type="text" id="name" name="name" required placeholder="{{ t.name_placeholder }}" value="{{ input_name|default('') }}" autofocus>
@@ -192,10 +192,10 @@
         </article>
         </div>
         <aside class="sidebar column-right">
-            <a href="/ar/" class="ad-banner">
-                <span class="ad-banner-flag">🇸🇦</span>
-                <span class="ad-banner-title">Arabic Names</span>
-                <span class="ad-banner-desc">Find similar names from our Arabic database</span>
+            <a href="/" class="ad-banner">
+                <span class="ad-banner-flag">🇬🇧</span>
+                <span class="ad-banner-title">English Names</span>
+                <span class="ad-banner-desc">Find similar names from our English database</span>
                 <span class="ad-banner-cta">Try it →</span>
             </a>
         </aside>
@@ -204,7 +204,7 @@
     <script>
     function updateFormAction() {
         var name = document.getElementById('name').value;
-        document.getElementById('nameForm').action = '/find/' + encodeURIComponent(name || '');
+        document.getElementById('nameForm').action = '/ar/find/' + encodeURIComponent(name || '');
     }
     document.getElementById('name').addEventListener('input', updateFormAction);
     document.getElementById('name').addEventListener('keydown', function(e) {
@@ -217,7 +217,7 @@
     updateFormAction();
 
     function shareName(input, name) {
-        var text = input + "'s English name is " + name + ". Find yours: https://namefinder.dutl.uk/";
+        var text = input + "'s similar Arabic name is " + name + ". Find yours: https://namefinder.dutl.uk/ar/";
         if (navigator.share) {
             navigator.share({ title: '{{ t.title }}', text: text }).catch(function(){});
         } else {

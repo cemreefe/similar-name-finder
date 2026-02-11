@@ -25,7 +25,7 @@ class TestIndexRoute:
 class TestFindRedirect:
     def test_redirects_to_pretty_url(self, client):
         response = client.get(
-            "/find?name=John&input_type=english&distance_dimension=mp&gender=boy"
+            "/find?name=John&input_type=english&distance_dimension=mp&gender=male"
         )
         assert response.status_code == 302
         assert "/find/John" in response.headers["Location"]
@@ -66,9 +66,9 @@ class TestGetSimilarNames:
 
     def test_result_structure(self):
         results, input_fields = get_similar_names("John", "english", "mp", "")
-        name, gender, phonetic_repr, ipa, ipa_alts, score = results[0]
+        name, gender, phonetic_repr, ipa, ipa_alts, score, original_writing = results[0]
         assert isinstance(name, str)
-        assert gender in ("boy", "girl")
+        assert gender in ("male", "female")
         assert isinstance(score, float)
 
         assert input_fields.name == "John"
@@ -81,16 +81,16 @@ class TestGetSimilarNames:
 
     def test_results_sorted_by_score_ascending(self):
         results, _ = get_similar_names("Mary", "english", "mp", "")
-        scores = [r[-1] for r in results]
+        scores = [r[5] for r in results]
         assert scores == sorted(scores)
 
-    def test_gender_filter_boy(self):
-        results, _ = get_similar_names("John", "english", "mp", "boy")
-        assert all(r[1] == "boy" for r in results)
+    def test_gender_filter_male(self):
+        results, _ = get_similar_names("John", "english", "mp", "male")
+        assert all(r[1] == "male" for r in results)
 
-    def test_gender_filter_girl(self):
-        results, _ = get_similar_names("Mary", "english", "mp", "girl")
-        assert all(r[1] == "girl" for r in results)
+    def test_gender_filter_female(self):
+        results, _ = get_similar_names("Mary", "english", "mp", "female")
+        assert all(r[1] == "female" for r in results)
 
     def test_no_gender_filter_returns_mixed(self):
         results, _ = get_similar_names("Sam", "english", "mp", "")
@@ -184,8 +184,8 @@ class TestTurkishNameSnapshots:
             "Hjalmar", "Hjalmer", "Jamie", "Jayme", "Jami",
         ]
 
-    def test_mehmet_turkish_mp_boy(self):
-        results, input_fields = get_similar_names("Mehmet", "turkish", "mp", "boy")
+    def test_mehmet_turkish_mp_male(self):
+        results, input_fields = get_similar_names("Mehmet", "turkish", "mp", "male")
         assert input_fields == NameRepr("Mehmet", ipa="mehmet", mp="MHMT")
         names = [r[0] for r in results]
         assert names == [
@@ -193,8 +193,8 @@ class TestTurkishNameSnapshots:
             "May", "Mae", "Mayo", "Moe", "Wm",
         ]
 
-    def test_ayse_turkish_ipa_girl(self):
-        results, input_fields = get_similar_names("Ayşe", "turkish", "ipa", "girl")
+    def test_ayse_turkish_ipa_female(self):
+        results, input_fields = get_similar_names("Ayşe", "turkish", "ipa", "female")
         assert input_fields == NameRepr("Ayşe", ipa="ajʃe", mp="AS")
         names = [r[0] for r in results]
         assert names == [

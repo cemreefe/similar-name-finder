@@ -3,9 +3,9 @@ from enum import Enum
 from typing import assert_never
 from flask import Flask, render_template, request, redirect, url_for
 try:
-    from api.translations import get_translations, LANGUAGES
+    from api.translations import get_translations, get_arabic_page_translations, LANGUAGES
 except ImportError:
-    from translations import get_translations, LANGUAGES
+    from translations import get_translations, get_arabic_page_translations, LANGUAGES
 import sqlite3
 from metaphone import doublemetaphone
 import helpers.metaphone_helper as mhelp
@@ -18,6 +18,7 @@ from urllib.parse import quote, unquote, urlencode
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _BASE_URL = 'https://namefinder.dutl.uk'
 _DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'names_database.db')
+_ARAB_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'arabnames_database.db')
 import re
 import unicodedata
 
@@ -198,7 +199,8 @@ def _score(encoded, dim, name, name_mp, name_ipa):
             assert_never(unreachable)
 
 
-def get_similar_names(input_name, input_type, distance_dimension, gender):
+def get_similar_names(input_name, input_type, distance_dimension, gender, db_path=None):
+    db_path = db_path or _DB_PATH
     encoded = _encode(input_name, InputType(input_type))
 
     if distance_dimension == 'sound':
@@ -211,23 +213,31 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
     if dim is DistanceDimension.MP and encoded.mp is None:
         raise ValueError(f"Cannot use metaphone distance with {input_type!r} input")
 
-    conn = sqlite3.connect(_DB_PATH)
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    if gender:
-        cursor.execute('SELECT * FROM names WHERE gender = ?', (gender,))
+    cursor.execute('PRAGMA table_info(names)')
+    columns = [row[1] for row in cursor.fetchall()]
+    has_original_writing = 'original_writing' in columns
+    db_gender = {'male': 'boy', 'female': 'girl'}.get(gender, gender) if gender else None
+    if db_gender:
+        cursor.execute('SELECT * FROM names WHERE gender = ?', (db_gender,))
     else:
         cursor.execute('SELECT * FROM names')
     all_names = cursor.fetchall()
     conn.close()
 
+    display_gender = {'boy': 'male', 'girl': 'female'}
     similar_names = []
-    for name, name_gender, name_mp, name_ipa, name_ipa_alts in all_names:
+    for row in all_names:
+        name, name_gender, name_mp, name_ipa, name_ipa_alts = row[:5]
+        original_writing = row[5] if has_original_writing and len(row) > 5 else None
         score = _score(encoded, dim, name, name_mp, name_ipa)
-        similar_names.append((name, name_gender, name_mp, name_ipa, name_ipa_alts, score))
+        out_gender = display_gender.get(name_gender, name_gender)
+        similar_names.append((name, out_gender, name_mp, name_ipa, name_ipa_alts, score, original_writing))
 
-    similar_names.sort(key=lambda x: x[-1])
+    similar_names.sort(key=lambda x: x[5])
 
-    if not gender:
+    if not db_gender:
         seen = set()
         unique = []
         for r in similar_names:
@@ -412,6 +422,105 @@ def find_similar_names_pretty(input_name):
         lang=lang,
         languages=LANGUAGES,
         lang_links=[(code, label, _lang_url(code)) for code, (label, _) in LANGUAGES.items()],
+        script_mismatches=script_mismatches,
+        mismatch_cta_links=mismatch_cta_links,
+    )
+
+
+def _ar_lang_url(lang_code):
+    args = request.args.to_dict()
+    if lang_code == 'en':
+        args.pop('lang', None)
+    else:
+        args['lang'] = lang_code
+    args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    path = request.path if request.path.startswith('/ar/find') else '/ar'
+    return path + ('?' + urlencode(args) if args else '')
+
+
+@app.route('/ar/')
+def arabic_index():
+    lang = _get_lang()
+    t = get_arabic_page_translations(lang)
+    lang_links = [(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()]
+    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    return render_template(
+        'arabic.html',
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=lang_links,
+        input_type=input_type,
+        distance_dimension=request.args.get('distance_dimension', 'sound'),
+        gender=request.args.get('gender', ''),
+        script_mismatches=[],
+        mismatch_cta_links=[],
+    )
+
+
+@app.route('/ar/find', methods=['GET'])
+def arabic_find_redirect():
+    input_name = request.args.get('name')
+    input_name = unquote(input_name or '')
+    if not input_name:
+        lang = request.args.get('lang', 'en')
+        return redirect(url_for('arabic_index', lang=lang, input_type=LANG_TO_INPUT_TYPE.get(lang, 'english')))
+    lang = _get_lang()
+    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    return redirect(url_for(
+        'find_similar_arabic_names', input_name=input_name,
+        input_type=input_type,
+        distance_dimension=request.args.get('distance_dimension'),
+        gender=request.args.get('gender'),
+        lang=lang,
+    ))
+
+
+@app.route('/ar/find/<string:input_name>', methods=['GET'])
+def find_similar_arabic_names(input_name):
+    input_name = unquote(input_name)
+    lang = _get_lang()
+    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    distance_dimension = request.args.get('distance_dimension') or 'sound'
+    gender = request.args.get('gender') or ''
+    t = get_arabic_page_translations(lang)
+
+    similar_names, input_fields = get_similar_names(
+        input_name, input_type, distance_dimension, gender, db_path=_ARAB_DB_PATH
+    )
+
+    script_mismatches = _get_script_mismatches(input_name, input_type)
+    mismatch_cta_links = []
+    for suggested_type in script_mismatches:
+        args = request.args.to_dict()
+        args['input_type'] = suggested_type
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(args) if args else '')))
+
+    result_names = ', '.join(n for n, *_ in similar_names[:5])
+    page_title = t['page_title']
+    meta_description = t['meta_description']
+    if input_name:
+        page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
+        meta_description = f"{t['similar_to'].format(name=input_name)}: {result_names}. {t['meta_description']}"
+
+    meta_image_url = f"{_BASE_URL}/og-image/{quote(input_name, safe='')}" if input_name else None
+
+    return render_template(
+        'arabic.html',
+        input_name=input_name,
+        input_type=input_type,
+        input_fields=input_fields,
+        similar_names=similar_names,
+        distance_dimension=distance_dimension,
+        gender=gender,
+        page_title=page_title,
+        meta_description=meta_description,
+        meta_image_url=meta_image_url,
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
         mismatch_cta_links=mismatch_cta_links,
     )
