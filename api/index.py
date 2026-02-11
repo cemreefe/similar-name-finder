@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from enum import Enum
+from typing import assert_never
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from metaphone import doublemetaphone
@@ -8,38 +11,95 @@ from jellyfish import jaro_winkler_similarity
 import os
 from urllib.parse import unquote
 import re
+import unicodedata
 
 
-def distance_function(x, y):
+class InputType(Enum):
+    ENGLISH = 'english'
+    TURKISH = 'turkish'
+    IPA = 'ipa'
+    MP = 'mp'
+
+
+class DistanceDimension(Enum):
+    IPA = 'ipa'
+    MP = 'mp'
+    SPELLING = 'spelling'
+
+
+@dataclass
+class NameRepr:
+    name: str
+    ipa: str | None = None
+    mp: str | None = None
+
+
+def _distance(x, y):
     return 1 - jaro_winkler_similarity(x, y)
 
 
-def _similarity_ipa(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-    if input_mp and name_phonetic_repr:
-        return distance_function(input_ipa, name_ipa) + distance_function(input_mp, name_phonetic_repr)/100
-    return distance_function(input_ipa, name_ipa)
+def _encode(name, input_type: InputType) -> NameRepr:
+    match input_type:
+        case InputType.ENGLISH:
+            normalized = name.capitalize()
+            return NameRepr(name, ipa=ipa_list(normalized)[0][0], mp=doublemetaphone(normalized)[0].upper())
+        case InputType.TURKISH:
+            ep = Epitran('tur-Latn')
+            ipa = ep.transliterate(name)
+            mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
+            return NameRepr(name, ipa=ipa, mp=mp)
+        case InputType.IPA:
+            return NameRepr(name, ipa=name)
+        case InputType.MP:
+            return NameRepr(name, mp=name.upper())
+        case _ as unreachable:
+            assert_never(unreachable)
 
 
-def _similarity_metaphone(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-    if input_ipa and name_ipa:
-        return distance_function(input_mp, name_phonetic_repr) + distance_function(input_ipa, name_ipa)/100
-    return distance_function(input_mp, name_phonetic_repr)
+def _phonetic_score(primary_input, primary_db, secondary_input, secondary_db):
+    score = _distance(primary_input, primary_db)
+    if secondary_input and secondary_db:
+        score += _distance(secondary_input, secondary_db) / 100
+    return score
 
 
-def _similarity_spelling(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts):
-    _input_name = re.sub(r'(.)\1+', r'\1', input_name)
-    _name = re.sub(r'(.)\1+', r'\1', name)
-    return distance_function(_input_name, _name)
+def _strip_diacritics(text):
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', text)
+        if unicodedata.category(c) != 'Mn'
+    )
 
 
-def _similarity_error(*args):
-    return 404
+def _spelling_score(input_name, name):
+    a = re.sub(r'(.)\1+', r'\1', _strip_diacritics(input_name.lower()))
+    b = re.sub(r'(.)\1+', r'\1', _strip_diacritics(name.lower()))
+    return _distance(a, b)
 
 
 app = Flask(__name__)
 
 
+def _score(encoded, dim, name, name_mp, name_ipa):
+    match dim:
+        case DistanceDimension.IPA:
+            return _phonetic_score(encoded.ipa, name_ipa, encoded.mp, name_mp)
+        case DistanceDimension.MP:
+            return _phonetic_score(encoded.mp, name_mp, encoded.ipa, name_ipa)
+        case DistanceDimension.SPELLING:
+            return _spelling_score(encoded.name, name)
+        case _ as unreachable:
+            assert_never(unreachable)
+
+
 def get_similar_names(input_name, input_type, distance_dimension, gender):
+    encoded = _encode(input_name, InputType(input_type))
+    dim = DistanceDimension(distance_dimension)
+
+    if dim is DistanceDimension.IPA and encoded.ipa is None:
+        raise ValueError(f"Cannot use IPA distance with {input_type!r} input")
+    if dim is DistanceDimension.MP and encoded.mp is None:
+        raise ValueError(f"Cannot use metaphone distance with {input_type!r} input")
+
     conn = sqlite3.connect('names_database.db')
     cursor = conn.cursor()
     if gender:
@@ -49,44 +109,13 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
     all_names = cursor.fetchall()
     conn.close()
 
-    if input_type == 'english':
-        input_mp = doublemetaphone(input_name)[0].upper()
-        input_ipa = ipa_list(input_name)[0][0]
-    elif input_type == 'ipa':
-        input_ipa = input_name
-        input_mp = None
-    elif input_type == 'mp':
-        input_ipa = None
-        input_mp = input_name.upper()
-    elif input_type == 'turkish':
-        ep = Epitran('tur-Latn')
-        input_ipa = ep.transliterate(input_name)
-        input_mp = mhelp.map_ipa_to_metaphone(input_ipa).upper()
-        input_mp = input_mp.replace('B', 'P')
-    else:
-        raise ValueError(f"Unknown input_type: {input_type!r}")
-
-    if input_type in ('english', 'turkish'):
-        similarity_funcs = {
-            'mp': _similarity_metaphone,
-            'ipa': _similarity_ipa,
-            'spelling': _similarity_spelling,
-        }
-        calculate_similarity = similarity_funcs.get(distance_dimension, _similarity_error)
-    elif input_type == 'ipa' and distance_dimension == 'ipa':
-        calculate_similarity = _similarity_ipa
-    elif input_type == 'mp' and distance_dimension == 'mp':
-        calculate_similarity = _similarity_metaphone
-    else:
-        calculate_similarity = _similarity_error
-
     similar_names = []
-    for name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts in all_names:
-        similarity_score = calculate_similarity(input_name, input_ipa, input_mp, name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts)
-        similar_names.append((name, name_gender, name_phonetic_repr, name_ipa, name_ipa_alts, similarity_score))
+    for name, name_gender, name_mp, name_ipa, name_ipa_alts in all_names:
+        score = _score(encoded, dim, name, name_mp, name_ipa)
+        similar_names.append((name, name_gender, name_mp, name_ipa, name_ipa_alts, score))
 
     similar_names.sort(key=lambda x: x[-1])
-    return similar_names[:10], (input_name, input_ipa, input_mp)
+    return similar_names[:10], encoded
 
 
 @app.route('/')

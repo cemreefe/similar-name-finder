@@ -5,7 +5,7 @@ import pytest
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.getcwd())
 
-from api.index import app, get_similar_names
+from api.index import app, get_similar_names, NameRepr
 
 
 @pytest.fixture
@@ -63,10 +63,9 @@ class TestGetSimilarNames:
         assert gender in ("boy", "girl")
         assert isinstance(score, float)
 
-        input_name, input_ipa, input_mp = input_fields
-        assert input_name == "John"
-        assert isinstance(input_ipa, str)
-        assert isinstance(input_mp, str)
+        assert input_fields.name == "John"
+        assert isinstance(input_fields.ipa, str)
+        assert isinstance(input_fields.mp, str)
 
     def test_exact_match_ranks_first(self):
         results, _ = get_similar_names("John", "english", "mp", "")
@@ -103,18 +102,18 @@ class TestGetSimilarNames:
     def test_mp_input_type(self):
         results, input_fields = get_similar_names("JN", "mp", "mp", "")
         assert len(results) == 10
-        assert input_fields[2] == "JN"
+        assert input_fields.mp == "JN"
 
     def test_ipa_input_type(self):
         results, input_fields = get_similar_names("dʒɑn", "ipa", "ipa", "")
         assert len(results) == 10
-        assert input_fields[1] == "dʒɑn"
+        assert input_fields.ipa == "dʒɑn"
 
 
 class TestTurkishNameSnapshots:
     def test_cemre_turkish_mp(self):
         results, input_fields = get_similar_names("Cemre", "turkish", "mp", "")
-        assert input_fields == ("Cemre", "d͡ʒemɾe", "JMR")
+        assert input_fields == NameRepr("Cemre", ipa="d͡ʒemɾe", mp="JMR")
         names = [r[0] for r in results]
         assert names == [
             "Jamar", "Jamir", "Jamari", "Jamarion", "Jeanmarie",
@@ -123,7 +122,7 @@ class TestTurkishNameSnapshots:
 
     def test_mehmet_turkish_mp_boy(self):
         results, input_fields = get_similar_names("Mehmet", "turkish", "mp", "boy")
-        assert input_fields == ("Mehmet", "mehmet", "MHMT")
+        assert input_fields == NameRepr("Mehmet", ipa="mehmet", mp="MHMT")
         names = [r[0] for r in results]
         assert names == [
             "Muhammad", "Mohammad", "Mohammed", "Mohamed", "Mamie",
@@ -132,7 +131,7 @@ class TestTurkishNameSnapshots:
 
     def test_ayse_turkish_ipa_girl(self):
         results, input_fields = get_similar_names("Ayşe", "turkish", "ipa", "girl")
-        assert input_fields == ("Ayşe", "ajʃe", "AS")
+        assert input_fields == NameRepr("Ayşe", ipa="ajʃe", mp="AS")
         names = [r[0] for r in results]
         assert names == [
             "Anjanette", "Jacey", "Avie", "Anie", "Aisha",
