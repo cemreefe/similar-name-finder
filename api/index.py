@@ -164,10 +164,23 @@ def _encode(name, input_type: InputType) -> NameRepr:
             assert_never(unreachable)
 
 
-def _phonetic_score(primary_input, primary_db, secondary_input, secondary_db):
+_CONSONANTS = set('BCDFGHJKLMNPQRSTVWXYZ0')
+
+def _first_letter_penalty(input_mp: str, name_mp: str, weight: float = 0.15) -> float:
+    if not input_mp or not name_mp:
+        return 0.0
+    first_in, first_db = input_mp[0].upper(), name_mp[0].upper()
+    if first_in not in _CONSONANTS:
+        return 0.0
+    return 0.0 if first_in == first_db else weight
+
+
+def _phonetic_score(primary_input, primary_db, secondary_input, secondary_db, primary_is_mp=False):
     score = _distance(primary_input, primary_db)
     if secondary_input and secondary_db:
         score += _distance(secondary_input, secondary_db) / 100
+    if primary_is_mp and primary_input and primary_db:
+        score += _first_letter_penalty(primary_input, primary_db)
     return score
 
 
@@ -192,7 +205,7 @@ def _score(encoded, dim, name, name_mp, name_ipa):
         case DistanceDimension.IPA:
             return _phonetic_score(encoded.ipa, name_ipa, encoded.mp, name_mp)
         case DistanceDimension.MP:
-            return _phonetic_score(encoded.mp, name_mp, encoded.ipa, name_ipa)
+            return _phonetic_score(encoded.mp, name_mp, encoded.ipa, name_ipa, primary_is_mp=True)
         case DistanceDimension.SPELLING:
             return _spelling_score(encoded.name, name)
         case _ as unreachable:
