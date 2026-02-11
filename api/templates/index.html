@@ -17,9 +17,11 @@
     <meta property="og:title" content="{{ page_title|default(t.page_title) }}">
     <meta property="og:description" content="{{ meta_description|default(t.meta_description) }}">
     <meta property="og:url" content="https://namefinder.dutl.uk{{ request.path }}">
-    <meta property="og:image" content="https://i.ibb.co/LhHyrtJ1/sam.png">
+    <meta property="og:image" content="{{ meta_image_url|default('https://i.ibb.co/LhHyrtJ1/sam.png') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://i.ibb.co/LhHyrtJ1/sam.png">
+    <meta name="twitter:image" content="{{ meta_image_url|default('https://i.ibb.co/LhHyrtJ1/sam.png') }}">
     <meta name="twitter:title" content="{{ page_title|default(t.page_title) }}">
     <meta name="twitter:description" content="{{ meta_description|default(t.meta_description) }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='card.png') }}">
@@ -124,7 +126,7 @@
             </p>
             {% endif %}
             {% if input_fields.mp or input_fields.ipa %}
-            <p class="input-encoding">{{ t.get('input_encoding', 'Your encoding') }}: MP <code>{{ input_fields.mp or '—' }}</code>{% if input_fields.ipa %} · IPA <code>{{ input_fields.ipa }}</code>{% endif %}</p>
+            <p class="input-encoding">{{ t.get('input_encoding', 'Your encoding') }}: MP <code>{{ input_fields.mp or '—' }}</code>{% if input_fields.ipa and '*' not in input_fields.ipa %} · IPA <code>{{ input_fields.ipa }}</code>{% endif %}</p>
             {% endif %}
             <ul class="name-list">
                 {% for name, name_gender, name_mp, name_ipa, ipa_alternatives, score in similar_names %}

@@ -14,9 +14,11 @@ import helpers.metaphone_helper as mhelp
 from eng_to_ipa import ipa_list
 from jellyfish import jaro_winkler_similarity
 import os
-from urllib.parse import unquote, urlencode
+from io import BytesIO
+from urllib.parse import quote, unquote, urlencode
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_BASE_URL = 'https://namefinder.dutl.uk'
 _DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'names_database.db')
 import re
 import unicodedata
@@ -148,9 +150,9 @@ def _encode(name, input_type: InputType) -> NameRepr:
         case InputType.ENGLISH:
             return _encode_romanized(name)
         case InputType.TURKISH:
-            # Epitran tur-Latn init causes ~10s timeouts on Vercel serverless cold start.
-            # Using romanized fallback until we can optimize or replace.
-            return _encode_romanized(name)
+            ipa = mhelp.turkish_to_ipa(name)
+            mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
+            return NameRepr(name, ipa=ipa, mp=mp)
         case InputType.FRENCH:
             return _encode_epitran(name, 'fra-Latn')
         case InputType.CHINESE:
@@ -333,6 +335,50 @@ def index():
     )
 
 
+@app.route('/og-image/<path:name>')
+def og_image(name):
+    name = unquote(name)
+    from PIL import Image, ImageDraw, ImageFont
+
+    width, height = 1200, 630
+    img = Image.new('RGB', (width, height), color=(250, 250, 252))
+    draw = ImageDraw.Draw(img)
+
+    font_paths = [
+        os.path.join(_THIS_DIR, 'fonts', 'DejaVuSans-Bold.ttf'),
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+        '/System/Library/Fonts/Helvetica.ttc',
+        '/Library/Fonts/Arial Bold.ttf',
+    ]
+    font_large = font_small = None
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                font_large = ImageFont.truetype(path, 72)
+                font_small = ImageFont.truetype(path, 32)
+            except OSError:
+                continue
+            break
+    if font_large is None:
+        font_large = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+
+    text = f"{name}'s similar names"
+    bbox = draw.textbbox((0, 0), text, font=font_large)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text(((width - tw) / 2, (height - th) / 2 - 20), text, fill=(30, 30, 35), font=font_large)
+    draw.text((width / 2 - 150, height / 2 + 40), "Find yours at namefinder.dutl.uk", fill=(100, 100, 110), font=font_small)
+
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf.getvalue(), 200, {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400',
+    }
+
+
 @app.route('/find', methods=['GET'])
 def find_redirect():
     input_name = request.args.get('name')
@@ -376,6 +422,8 @@ def find_similar_names_pretty(input_name):
         page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
         meta_description = f"{t['similar_to'].format(name=input_name)}: {result_names}. {t['meta_description']}"
 
+    meta_image_url = f"{_BASE_URL}/og-image/{quote(input_name, safe='')}" if input_name else None
+
     return render_template(
         'index.html',
         input_name=input_name,
@@ -386,6 +434,7 @@ def find_similar_names_pretty(input_name):
         gender=gender,
         page_title=page_title,
         meta_description=meta_description,
+        meta_image_url=meta_image_url,
         t=t,
         lang=lang,
         languages=LANGUAGES,

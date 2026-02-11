@@ -154,6 +154,41 @@ def map_ipa_to_metaphone(ipa_str):
     mapped_to_en = map_ipa_to_english(ipa_str)
     return convert_to_metaphone(mapped_to_en)
 
+
+def turkish_to_ipa(text: str) -> str:
+    """Turkish orthography to IPA."""
+    text = text.lower().strip()
+    result = []
+    soft_vowels = 'eiöü'
+    for i, c in enumerate(text):
+        next_soft = i + 1 < len(text) and text[i + 1].lower() in soft_vowels
+        match c:
+            case 'ç':
+                result.append('tʃ')
+            case 'ş':
+                result.append('ʃ')
+            case 'ğ':
+                pass
+            case 'ı':
+                result.append('ɯ')
+            case 'ö':
+                result.append('œ')
+            case 'ü':
+                result.append('y')
+            case 'c':
+                result.append('d͡ʒ')
+            case 'g':
+                result.append('ɟ' if next_soft else 'ɡ')
+            case 'j':
+                result.append('ʒ')
+            case 'y':
+                result.append('j')
+            case 'r':
+                result.append('ɾ')
+            case _:
+                result.append(c)
+    return ''.join(result)
+
 # ipa_string = "ɪnˈtɝnæʃnəl fəˈnɛtɪk ˈælfəbɛt"
 # english_phonetic = map_ipa_to_english(ipa_string)
 # print(english_phonetic)  # Output: "internaeshnl fenetik aelfabet"
