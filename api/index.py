@@ -13,6 +13,9 @@ from eng_to_ipa import ipa_list
 from jellyfish import jaro_winkler_similarity
 import os
 from urllib.parse import unquote, urlencode
+
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'names_database.db')
 import re
 import unicodedata
 
@@ -210,7 +213,7 @@ def get_similar_names(input_name, input_type, distance_dimension, gender):
     if dim is DistanceDimension.MP and encoded.mp is None:
         raise ValueError(f"Cannot use metaphone distance with {input_type!r} input")
 
-    conn = sqlite3.connect('names_database.db')
+    conn = sqlite3.connect(_DB_PATH)
     cursor = conn.cursor()
     if gender:
         cursor.execute('SELECT * FROM names WHERE gender = ?', (gender,))
