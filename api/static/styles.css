@@ -169,7 +169,7 @@ body {
 .column-center {
     min-width: 0;
     display: grid;
-    grid-template-columns: 1fr 11rem;
+    grid-template-columns: 1fr 13rem;
     gap: 2rem;
     align-items: start;
 }
@@ -190,8 +190,13 @@ body {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 1rem;
+    }
+
     .three-column {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
 
     .column-left {
@@ -200,6 +205,68 @@ body {
 
     .column-center {
         grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .header {
+        margin-bottom: 1.25rem;
+    }
+
+    .form {
+        gap: 0.75rem;
+    }
+
+    .options {
+        padding: 0.75rem 1rem;
+    }
+
+    .options-grid {
+        gap: 0.5rem;
+    }
+
+    .options-grid label {
+        margin-bottom: 0.2rem;
+    }
+
+    .results {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+    }
+
+    .input-encoding,
+    .script-mismatch {
+        margin-bottom: 0.5rem;
+    }
+
+    .name-item {
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .name-item-meta {
+        gap: 0.5rem;
+    }
+
+    .credit {
+        margin-top: 0.5rem;
+    }
+
+    .content {
+        margin-top: 1.5rem;
+        padding: 1rem 0;
+    }
+
+    .content h2 {
+        margin: 1rem 0 0.35rem 0;
+    }
+
+    .content h3 {
+        margin: 0.75rem 0 0.35rem 0;
+    }
+
+    .content p,
+    .content ul {
+        margin-bottom: 0.5rem;
     }
 
     .column-center .sidebar {
@@ -207,13 +274,42 @@ body {
         grid-row: auto;
         position: static;
         width: 100%;
-        max-width: 20rem;
-        margin: 0 auto;
+        max-width: 28rem;
+        margin: 0 auto 0.5rem;
+        order: -1;
+        display: flex;
+        flex-direction: row;
+        gap: 0.4rem;
+        flex-wrap: nowrap;
+    }
+
+    .column-center .sidebar .ad-banner {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .column-center .page {
+        order: 0;
+    }
+
+    .column-center .content {
+        order: 1;
     }
 }
 
 .ad-banner + .ad-banner {
-    margin-top: 0.75rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .ad-banner + .ad-banner {
+        margin-top: 0;
+    }
+
+    .column-center .sidebar {
+        margin-bottom: 0.5rem;
+        gap: 0.4rem;
+    }
 }
 
 .ad-banner {
@@ -241,8 +337,12 @@ body {
 .ad-banner-title {
     display: block;
     font-weight: 600;
-    font-size: 0.9375rem;
-    color: #1e293b;
+    font-size: 1.0625rem;
+    letter-spacing: -0.025em;
+    background: linear-gradient(120deg, #0f172a 0%, #334155 50%, #0ea5e9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .ad-banner-desc {
@@ -259,6 +359,43 @@ body {
     font-size: 0.8125rem;
     font-weight: 500;
     color: #0284c7;
+}
+
+@media (max-width: 768px) {
+    .ad-banner {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.35rem 0.6rem;
+        border-radius: 4px;
+        background: rgba(14, 165, 233, 0.04);
+        border-color: rgba(14, 165, 233, 0.12);
+    }
+
+    .ad-banner-flag {
+        display: inline;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .ad-banner-title {
+        display: inline;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ad-banner-desc,
+    .ad-banner-cta {
+        display: none;
+    }
 }
 
 .form {
@@ -325,7 +462,7 @@ body {
     gap: 1rem;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 360px) {
     .options-grid {
         grid-template-columns: 1fr;
     }
@@ -684,6 +821,13 @@ body.arabic-theme .ad-banner:hover {
     box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
 }
 
+body.arabic-theme .ad-banner-title {
+    background: linear-gradient(120deg, #0f172a 0%, #14532d 50%, #006233 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 body.arabic-theme .ad-banner-cta {
     color: #047857;
 }
@@ -781,6 +925,13 @@ body.korean-theme .ad-banner {
 body.korean-theme .ad-banner:hover {
     border-color: rgba(190, 18, 60, 0.5);
     box-shadow: 0 4px 12px rgba(190, 18, 60, 0.15);
+}
+
+body.korean-theme .ad-banner-title {
+    background: linear-gradient(120deg, #0f172a 0%, #9f1239 50%, #be123c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 body.korean-theme .ad-banner-cta {
