@@ -74,7 +74,35 @@ def create_database(csv_file, db_file):
     conn.close()
 
 
-def create_arabic_database(csv_file, db_file):
+def _normalize_for_lookup(s):
+    return ''.join(c for c in s.lower().replace("'", "").replace("'", " ") if c.isalnum() or c == ' ').replace(' ', '')
+
+
+def _load_arabic_writings_lookup(csv_path, eng_col='english_name', arabic_col='arabic_name'):
+    lookup = {}
+    with open(csv_path, 'r', encoding='utf-8-sig') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            eng = row.get(eng_col, '').strip()
+            arabic = row.get(arabic_col, '').strip()
+            if not eng or not arabic:
+                continue
+            key = _normalize_for_lookup(eng.replace(' 1', '').replace(' 2', '').replace(' 3', ''))
+            if key and key not in lookup:
+                lookup[key] = arabic
+    return lookup
+
+
+def _merge_arabic_lookups(*lookups):
+    merged = {}
+    for lookup in lookups:
+        for k, v in lookup.items():
+            if k not in merged:
+                merged[k] = v
+    return merged
+
+
+def create_arabic_database(csv_file, db_file, arabic_writings_csv=None, ar_en_names_csv=None):
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS names (
@@ -86,19 +114,31 @@ def create_arabic_database(csv_file, db_file):
                         original_writing TEXT,
                         PRIMARY KEY (name, gender)
                     )''')
+    cursor.execute('DELETE FROM names')
 
-    with open(csv_file, 'r', encoding='utf-8-sig') as file:
-        reader = csv.DictReader(file)
+    lookups = []
+    if arabic_writings_csv and os.path.exists(arabic_writings_csv):
+        lookups.append(_load_arabic_writings_lookup(arabic_writings_csv))
+    if ar_en_names_csv and os.path.exists(ar_en_names_csv):
+        lookups.append(_load_arabic_writings_lookup(ar_en_names_csv, eng_col='english', arabic_col='arabic'))
+    arabic_lookup = _merge_arabic_lookups(*lookups)
+
+    with open(csv_file, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
         rows = list(reader)
+
     for row in tqdm(rows, desc="Processing Arabic CSV"):
-        name = row['english_name'].strip()
-        arabic = row.get('arabic_name', '').strip()
-        gender = 'boy' if row.get('gender', 'm').lower() == 'm' else 'girl'
+        name = row.get('Name', row.get('english_name', '')).strip()
+        if not name:
+            continue
+        gender = row.get('Gender', row.get('gender', 'm'))
+        gender = 'boy' if str(gender).lower() in ('m', 'male') else 'girl'
+        original_writing = arabic_lookup.get(_normalize_for_lookup(name)) if arabic_lookup else None
         phonetic_repr = calculate_phonetic_representation(name)
         ipa_transcription, ipa_alternatives = calculate_ipa_transcription(name)
         try:
             cursor.execute('''INSERT INTO names (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives, original_writing)
-                            VALUES (?, ?, ?, ?, ?, ?)''', (name, gender, phonetic_repr, ipa_transcription, ipa_alternatives, arabic or None))
+                            VALUES (?, ?, ?, ?, ?, ?)''', (name, gender, phonetic_repr, ipa_transcription, ipa_alternatives, original_writing))
         except sqlite3.IntegrityError:
             pass
 
@@ -156,10 +196,12 @@ if __name__ == "__main__":
     create_database(csv_file, db_file)
     print("Database created successfully.")
 
-    arab_csv = "datasets/arabic_names.csv"
+    arab_csv = "datasets/arabnames.csv"
+    arabic_writings_csv = "datasets/arabic_names.csv"
+    ar_en_names_csv = "datasets/ar_en_names.csv"
     arab_db = "arabnames_database.db"
     if os.path.exists(arab_csv):
-        create_arabic_database(arab_csv, arab_db)
+        create_arabic_database(arab_csv, arab_db, arabic_writings_csv=arabic_writings_csv, ar_en_names_csv=ar_en_names_csv)
         print("Arabic database created successfully.")
 
     korean_csv = "datasets/kpopidolsv3.csv"
