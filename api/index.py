@@ -318,6 +318,16 @@ def _get_lang():
     return lang if lang in LANGUAGES else 'en'
 
 
+def _strip_defaults(params: dict, lang: str = 'en') -> dict:
+    defaults = {
+        'lang': 'en',
+        'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english'),
+        'distance_dimension': 'sound',
+        'gender': '',
+    }
+    return {k: v for k, v in params.items() if v and v != defaults.get(k)}
+
+
 def _product_url(path: str, name: str | None = None) -> str:
     base = path.rstrip('/')
     if name and name.strip():
@@ -328,12 +338,13 @@ def _product_url(path: str, name: str | None = None) -> str:
     if distance_dimension not in ('sound', 'mp', 'ipa'):
         distance_dimension = 'sound'
     gender = request.args.get('gender') or ''
-    params = {'input_type': input_type, 'distance_dimension': distance_dimension}
-    if lang != 'en':
-        params['lang'] = lang
-    if gender:
-        params['gender'] = gender
-    return base + ('&' if '?' in base else '?') + urlencode(params)
+    params = _strip_defaults({
+        'lang': lang,
+        'input_type': input_type,
+        'distance_dimension': distance_dimension,
+        'gender': gender,
+    }, lang)
+    return base + ('?' + urlencode(params) if params else '')
 
 
 def _product_urls(input_name: str = '') -> dict:
@@ -347,12 +358,10 @@ def _product_urls(input_name: str = '') -> dict:
 
 def _lang_url(lang_code):
     args = request.args.to_dict()
-    if lang_code == 'en':
-        args.pop('lang', None)
-    else:
-        args['lang'] = lang_code
+    args['lang'] = lang_code
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    args = _strip_defaults(args, lang_code)
     return request.path + ('?' + urlencode(args) if args else '')
 
 
@@ -381,16 +390,17 @@ def find_redirect():
     input_name = unquote(input_name or '')
     if not input_name:
         lang = request.args.get('lang', 'en')
-        return redirect(url_for('index', lang=lang, input_type=LANG_TO_INPUT_TYPE.get(lang, 'english')))
+        params = _strip_defaults({'lang': lang, 'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}, lang)
+        return redirect(url_for('index', **params))
     lang = _get_lang()
     input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
-    return redirect(url_for(
-        'find_similar_names_pretty', input_name=input_name,
-        input_type=input_type,
-        distance_dimension=request.args.get('distance_dimension'),
-        gender=request.args.get('gender'),
-        lang=lang,
-    ))
+    params = _strip_defaults({
+        'input_type': input_type,
+        'distance_dimension': request.args.get('distance_dimension') or 'sound',
+        'gender': request.args.get('gender') or '',
+        'lang': lang,
+    }, lang)
+    return redirect(url_for('find_similar_names_pretty', input_name=input_name, **params))
 
 
 @app.route('/find/<string:input_name>', methods=['GET'])
@@ -407,9 +417,10 @@ def find_similar_names_pretty(input_name):
     script_mismatches = _get_script_mismatches(input_name, input_type)
     mismatch_cta_links = []
     for suggested_type in script_mismatches:
-        args = request.args.to_dict()
+        args = _strip_defaults(request.args.to_dict(), lang)
         args['input_type'] = suggested_type
-        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(args) if args else '')))
+        stripped = _strip_defaults(args, lang)
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
 
     result_names = ', '.join(n for n, *_ in similar_names[:5])
     page_title = t['page_title']
@@ -440,24 +451,20 @@ def find_similar_names_pretty(input_name):
 
 def _kr_lang_url(lang_code):
     args = request.args.to_dict()
-    if lang_code == 'en':
-        args.pop('lang', None)
-    else:
-        args['lang'] = lang_code
+    args['lang'] = lang_code
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    args = _strip_defaults(args, lang_code)
     path = request.path if request.path.startswith('/my-name-in-korean/find') else '/my-name-in-korean/'
     return path + ('?' + urlencode(args) if args else '')
 
 
 def _ar_lang_url(lang_code):
     args = request.args.to_dict()
-    if lang_code == 'en':
-        args.pop('lang', None)
-    else:
-        args['lang'] = lang_code
+    args['lang'] = lang_code
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    args = _strip_defaults(args, lang_code)
     path = request.path if request.path.startswith('/my-name-in-arabic/find') else '/my-name-in-arabic/'
     return path + ('?' + urlencode(args) if args else '')
 
@@ -491,16 +498,17 @@ def arabic_find_redirect():
     input_name = unquote(input_name or '')
     if not input_name:
         lang = request.args.get('lang', 'en')
-        return redirect(url_for('arabic_index', lang=lang, input_type=LANG_TO_INPUT_TYPE.get(lang, 'english')))
+        params = _strip_defaults({'lang': lang, 'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}, lang)
+        return redirect(url_for('arabic_index', **params))
     lang = _get_lang()
     input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
-    return redirect(url_for(
-        'find_similar_arabic_names', input_name=input_name,
-        input_type=input_type,
-        distance_dimension=request.args.get('distance_dimension'),
-        gender=request.args.get('gender'),
-        lang=lang,
-    ))
+    params = _strip_defaults({
+        'input_type': input_type,
+        'distance_dimension': request.args.get('distance_dimension') or 'sound',
+        'gender': request.args.get('gender') or '',
+        'lang': lang,
+    }, lang)
+    return redirect(url_for('find_similar_arabic_names', input_name=input_name, **params))
 
 
 @app.route('/my-name-in-arabic/find/<string:input_name>', methods=['GET'])
@@ -519,9 +527,10 @@ def find_similar_arabic_names(input_name):
     script_mismatches = _get_script_mismatches(input_name, input_type)
     mismatch_cta_links = []
     for suggested_type in script_mismatches:
-        args = request.args.to_dict()
+        args = _strip_defaults(request.args.to_dict(), lang)
         args['input_type'] = suggested_type
-        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(args) if args else '')))
+        stripped = _strip_defaults(args, lang)
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
 
     result_names = ', '.join(n for n, *_ in similar_names[:5])
     page_title = t['page_title']
@@ -579,16 +588,17 @@ def korean_find_redirect():
     input_name = unquote(input_name or '')
     if not input_name:
         lang = request.args.get('lang', 'en')
-        return redirect(url_for('korean_index', lang=lang, input_type=LANG_TO_INPUT_TYPE.get(lang, 'english')))
+        params = _strip_defaults({'lang': lang, 'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}, lang)
+        return redirect(url_for('korean_index', **params))
     lang = _get_lang()
     input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
-    return redirect(url_for(
-        'find_similar_korean_names', input_name=input_name,
-        input_type=input_type,
-        distance_dimension=request.args.get('distance_dimension'),
-        gender=request.args.get('gender'),
-        lang=lang,
-    ))
+    params = _strip_defaults({
+        'input_type': input_type,
+        'distance_dimension': request.args.get('distance_dimension') or 'sound',
+        'gender': request.args.get('gender') or '',
+        'lang': lang,
+    }, lang)
+    return redirect(url_for('find_similar_korean_names', input_name=input_name, **params))
 
 
 @app.route('/my-name-in-korean/find/<string:input_name>', methods=['GET'])
@@ -607,9 +617,10 @@ def find_similar_korean_names(input_name):
     script_mismatches = _get_script_mismatches(input_name, input_type)
     mismatch_cta_links = []
     for suggested_type in script_mismatches:
-        args = request.args.to_dict()
+        args = _strip_defaults(request.args.to_dict(), lang)
         args['input_type'] = suggested_type
-        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(args) if args else '')))
+        stripped = _strip_defaults(args, lang)
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
 
     result_names = ', '.join(n for n, *_ in similar_names[:5])
     page_title = t['page_title']
