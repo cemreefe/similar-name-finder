@@ -11,6 +11,23 @@ KOREAN_TWO_CHAR_SURNAMES = frozenset([
     '남궁', '사공', '제갈', '선우', '독고', '동방', '서문', '황보', '등정', '망절', '무본',
 ])
 
+MIN_POPULARITY_THRESHOLD = 0.0005  # 0.05% — exclude names below this max popularity
+
+EXCLUDE_FROM_ENGLISH = frozenset([
+    'aaliyah', 'abdul', 'abdullah', 'ahmad', 'ahmed', 'aisha', 'akeem', 'ala',
+    'ali', 'alia', 'amani', 'amin', 'amina', 'amir', 'amira', 'amirah',
+    'anwar', 'ayaan', 'ayesha', 'bilal', 'daneen', 'dema', 'diya', 'farah',
+    'fatima', 'hakeem', 'hakim', 'hamza', 'hasan', 'hassan', 'ibrahim',
+    'imani', 'isa', 'isam', 'jabbar', 'jaleel', 'jamal', 'jameel', 'jamil',
+    'jamila', 'kadin', 'kamilah', 'kareem', 'karim', 'khadijah', 'khalid',
+    'khalil', 'khalilah', 'latifah', 'maira', 'malik', 'mariam', 'mariyah',
+    'maryam', 'mohammed', 'muhammad', 'mustafa', 'nada', 'naima', 'nakia',
+    'nasir', 'omar', 'rakeem', 'rashad', 'rasheed', 'rashida', 'rayan',
+    'salma', 'samir', 'samira', 'sanaa', 'saniya', 'saniyah', 'sharif',
+    'syed', 'taj', 'tariq', 'yasmeen', 'yasmin', 'yasmine', 'yusuf', 'zaid',
+    'zaida', 'zain',
+])
+
 
 def split_korean_name(korean: str) -> tuple[str, str] | None:
     """Split Hangul name into (family, given). Returns None for non-standard names (e.g. Western)."""
@@ -39,6 +56,20 @@ def calculate_ipa_transcription(name):
     else:
         return None, None
 
+def _compute_max_popularity(csv_file):
+    from collections import defaultdict
+    name_max_pct = defaultdict(float)
+    with open(csv_file, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            name = row[1].lower()
+            pct = float(row[2])
+            if pct > name_max_pct[name]:
+                name_max_pct[name] = pct
+    return name_max_pct
+
+
 def create_database(csv_file, db_file):
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
@@ -51,23 +82,31 @@ def create_database(csv_file, db_file):
                         PRIMARY KEY (name, gender)
                     )''')
 
+    name_max_pct = _compute_max_popularity(csv_file)
+    excluded = EXCLUDE_FROM_ENGLISH | {
+        n for n, p in name_max_pct.items() if p < MIN_POPULARITY_THRESHOLD
+    }
+    print(f"Excluding {len(excluded)} names ({len(EXCLUDE_FROM_ENGLISH)} explicit + "
+          f"{len(excluded) - len(EXCLUDE_FROM_ENGLISH)} below {MIN_POPULARITY_THRESHOLD*100:.2f}% popularity)")
+
     with open(csv_file, 'r') as file:
         reader = csv.reader(file)
-        next(reader)  # Skip header
+        next(reader)
         total_rows = sum(1 for row in reader)
     with open(csv_file, 'r') as file:
         reader = csv.reader(file)
-        next(reader)  # Skip header
+        next(reader)
         for row in tqdm(reader, total=total_rows, desc="Processing CSV"):
             name = row[1]
             gender = row[3]
+            if name.lower() in excluded:
+                continue
             phonetic_repr = calculate_phonetic_representation(name)
             ipa_transcription, ipa_alternatives = calculate_ipa_transcription(name)
             try:
                 cursor.execute('''INSERT INTO names (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives)
                                 VALUES (?, ?, ?, ?, ?)''', (name, gender, phonetic_repr, ipa_transcription, ipa_alternatives))
             except sqlite3.IntegrityError:
-                # Skip duplicate names with the same gender
                 pass
 
     conn.commit()
