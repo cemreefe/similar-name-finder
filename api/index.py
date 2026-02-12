@@ -212,9 +212,21 @@ def _score(encoded, dim, name, name_mp, name_ipa):
             assert_never(unreachable)
 
 
+def _arabic_friendly_mp(mp_str: str | None, name: str) -> str | None:
+    """Re-encode metaphone with j→zh to match Arabic DB encoding."""
+    if mp_str is None:
+        return None
+    fixed = name.replace('j', 'zh').replace('J', 'Zh')
+    result = doublemetaphone(fixed)[0]
+    return result.upper() if result else mp_str
+
+
 def get_similar_names(input_name, input_type, distance_dimension, gender, db_path=None):
     db_path = db_path or _DB_PATH
     encoded = _encode(input_name, InputType(input_type))
+
+    if db_path == _ARAB_DB_PATH and encoded.mp:
+        encoded = NameRepr(encoded.name, ipa=encoded.ipa, mp=_arabic_friendly_mp(encoded.mp, input_name))
 
     if distance_dimension == 'sound':
         dim = DistanceDimension.MP if encoded.mp else DistanceDimension.IPA

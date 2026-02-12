@@ -46,6 +46,12 @@ def split_korean_name(korean: str) -> tuple[str, str] | None:
 def calculate_phonetic_representation(name):
     return doublemetaphone(name)[0]
 
+
+def _arabic_friendly_metaphone(name):
+    """Double Metaphone drops J after vowels (English-centric). Replace j→zh to preserve it."""
+    fixed = name.replace('j', 'zh').replace('J', 'Zh')
+    return doublemetaphone(fixed)[0]
+
 # Function to calculate IPA transcription of a name
 def calculate_ipa_transcription(name):
     ipa = ipa_list(name)[0]
@@ -173,7 +179,7 @@ def create_arabic_database(csv_file, db_file, arabic_writings_csv=None, ar_en_na
         gender = row.get('Gender', row.get('gender', 'm'))
         gender = 'boy' if str(gender).lower() in ('m', 'male') else 'girl'
         original_writing = arabic_lookup.get(_normalize_for_lookup(name)) if arabic_lookup else None
-        phonetic_repr = calculate_phonetic_representation(name)
+        phonetic_repr = _arabic_friendly_metaphone(name)
         ipa_transcription, ipa_alternatives = calculate_ipa_transcription(name)
         try:
             cursor.execute('''INSERT INTO names (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives, original_writing)
