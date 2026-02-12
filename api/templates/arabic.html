@@ -263,6 +263,15 @@
         }
     });
 
+    document.getElementById('nameForm').addEventListener('submit', function() {
+        var defaults = {lang: 'en', input_type: 'english', distance_dimension: 'sound', gender: ''};
+        var form = this;
+        Object.keys(defaults).forEach(function(name) {
+            var el = form.querySelector('[name="' + name + '"]');
+            if (el && el.value === defaults[name]) el.disabled = true;
+        });
+    });
+
     (function() {
         var trigger = document.getElementById('uiLangTrigger');
         var menu = document.getElementById('uiLangMenu');
