@@ -175,10 +175,12 @@ def _first_letter_penalty(input_mp: str, name_mp: str, weight: float = 0.15) -> 
     return 0.0 if first_in == first_db else weight
 
 
-def _phonetic_score(primary_input, primary_db, secondary_input, secondary_db, primary_is_mp=False):
+def _phonetic_score(primary_input, primary_db, secondary_input, secondary_db, primary_is_mp=False, input_name=None, db_name=None):
     score = _distance(primary_input, primary_db)
     if secondary_input and secondary_db:
         score += _distance(secondary_input, secondary_db) / 100
+    if input_name and db_name:
+        score += _spelling_score(input_name, db_name) / 10000
     if primary_is_mp and primary_input and primary_db:
         score += _first_letter_penalty(primary_input, primary_db)
     return score
@@ -203,9 +205,9 @@ app = Flask(__name__)
 def _score(encoded, dim, name, name_mp, name_ipa):
     match dim:
         case DistanceDimension.IPA:
-            return _phonetic_score(encoded.ipa, name_ipa, encoded.mp, name_mp)
+            return _phonetic_score(encoded.ipa, name_ipa, encoded.mp, name_mp, input_name=encoded.name, db_name=name)
         case DistanceDimension.MP:
-            return _phonetic_score(encoded.mp, name_mp, encoded.ipa, name_ipa, primary_is_mp=True)
+            return _phonetic_score(encoded.mp, name_mp, encoded.ipa, name_ipa, primary_is_mp=True, input_name=encoded.name, db_name=name)
         case DistanceDimension.SPELLING:
             return _spelling_score(encoded.name, name)
         case _ as unreachable:
