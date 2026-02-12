@@ -71,7 +71,7 @@
             </div>
         </header>
 
-        <form id="nameForm" class="form" method="GET" action="/find/{{ input_name|default('') }}">
+        <form id="nameForm" class="form" method="GET" action="/find">
             <input type="hidden" name="lang" value="{{ lang }}">
             <label for="name" class="visually-hidden">{{ t.name_placeholder }}</label>
             <input type="text" id="name" name="name" required placeholder="{{ t.name_placeholder }}" value="{{ input_name|default('') }}" autofocus>
