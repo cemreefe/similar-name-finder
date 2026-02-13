@@ -264,7 +264,7 @@
     });
 
     document.getElementById('nameForm').addEventListener('submit', function() {
-        var defaults = {lang: 'en', input_type: 'english', distance_dimension: 'sound', gender: ''};
+        var defaults = {lang: 'en', input_type: '{{ lang_default_input_type|default("english") }}', distance_dimension: 'sound', gender: ''};
         var form = this;
         Object.keys(defaults).forEach(function(name) {
             var el = form.querySelector('[name="' + name + '"]');

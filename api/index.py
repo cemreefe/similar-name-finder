@@ -202,6 +202,12 @@ def _spelling_score(input_name, name):
 app = Flask(__name__)
 
 
+@app.context_processor
+def _inject_lang_default_input_type():
+    lang = request.args.get('lang', 'en')
+    return {'lang_default_input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}
+
+
 def _score(encoded, dim, name, name_mp, name_ipa):
     match dim:
         case DistanceDimension.IPA:
