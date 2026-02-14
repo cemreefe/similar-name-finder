@@ -274,6 +274,7 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
 
 LANG_TO_INPUT_TYPE = {
     'en': 'english', 'tr': 'turkish', 'zh': 'chinese', 'ko': 'korean',
+    'hi': 'english', 'es': 'english', 'pt-BR': 'english',
     'fr': 'french', 'fil': 'filipino', 'ja': 'japanese',
 }
 

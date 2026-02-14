@@ -45,13 +45,13 @@
 <body>
     <nav class="ui-lang-dropdown" aria-label="Interface language">
         <button type="button" class="ui-lang-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Interface language" id="uiLangTrigger">
-            <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(lang, '🌐') }}</span>
+            <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'hi': '🇮🇳', 'es': '🇪🇸', 'pt-BR': '🇧🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(lang, '🌐') }}</span>
             <span class="ui-lang-chevron">▼</span>
         </button>
         <div class="ui-lang-menu" id="uiLangMenu" role="menu" hidden>
             {% for code, label, url in lang_links %}
             <a href="{{ url }}" role="menuitem" class="ui-lang-option{% if lang == code %} active{% endif %}">
-                <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(code, '🌐') }}</span>
+                <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'hi': '🇮🇳', 'es': '🇪🇸', 'pt-BR': '🇧🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(code, '🌐') }}</span>
                 <span class="ui-lang-label">{{ label }}</span>
             </a>
             {% endfor %}
