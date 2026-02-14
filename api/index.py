@@ -416,12 +416,11 @@ def find_similar_names_pretty(input_name):
         stripped = _strip_defaults(args, lang)
         mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
 
-    result_names = ', '.join(n for n, *_ in similar_names[:5])
     page_title = t['page_title']
     meta_description = t['meta_description']
     if input_name:
         page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
-        meta_description = f"{t['similar_to'].format(name=input_name)}: {result_names}. {t['meta_description']}"
+        meta_description = t.get('results_meta_description', t['meta_description']).format(name=input_name)
 
     return render_template(
         'index.html',
@@ -526,12 +525,11 @@ def find_similar_arabic_names(input_name):
         stripped = _strip_defaults(args, lang)
         mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
 
-    result_names = ', '.join(n for n, *_ in similar_names[:5])
     page_title = t['page_title']
     meta_description = t['meta_description']
     if input_name:
         page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
-        meta_description = f"{t['similar_to'].format(name=input_name)}: {result_names}. {t['meta_description']}"
+        meta_description = t.get('results_meta_description', t['meta_description']).format(name=input_name)
 
     return render_template(
         'arabic.html',
@@ -616,12 +614,11 @@ def find_similar_korean_names(input_name):
         stripped = _strip_defaults(args, lang)
         mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
 
-    result_names = ', '.join(n for n, *_ in similar_names[:5])
     page_title = t['page_title']
     meta_description = t['meta_description']
     if input_name:
         page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
-        meta_description = f"{t['similar_to'].format(name=input_name)}: {result_names}. {t['meta_description']}"
+        meta_description = t.get('results_meta_description', t['meta_description']).format(name=input_name)
 
     return render_template(
         'korean.html',
