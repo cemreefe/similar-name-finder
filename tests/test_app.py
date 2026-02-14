@@ -22,6 +22,21 @@ class TestIndexRoute:
         assert b"Similar Names Finder" in response.data
 
 
+class TestUiLanguages:
+    def test_language_picker_includes_new_languages(self, client):
+        response = client.get("/")
+        assert response.status_code == 200
+
+        html = response.data.decode("utf-8")
+        assert "हिन्दी" in html
+        assert "Español" in html
+        assert "Português (Brasil)" in html
+
+        assert 'hreflang="hi"' in html
+        assert 'hreflang="es"' in html
+        assert 'hreflang="pt-BR"' in html
+
+
 class TestFindRedirect:
     def test_redirects_to_pretty_url(self, client):
         response = client.get(
@@ -34,6 +49,11 @@ class TestFindRedirect:
         response = client.get("/find?name=")
         assert response.status_code == 302
         assert "/" in response.headers["Location"] and "find" not in response.headers["Location"]
+
+    def test_pt_br_lang_preserved_and_defaults_stripped(self, client):
+        response = client.get("/find?name=John&lang=pt-BR&input_type=english&distance_dimension=sound&gender=")
+        assert response.status_code == 302
+        assert response.headers["Location"] == "/find/John?lang=pt-BR"
 
 
 class TestFindRoute:
