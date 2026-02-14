@@ -5,7 +5,7 @@ import pytest
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.getcwd())
 
-from api.index import app, get_similar_names, NameRepr
+from api.index import app, get_similar_names, NameRepr, _ARAB_DB_PATH
 
 
 @pytest.fixture
@@ -174,14 +174,37 @@ class TestMetaphoneOutput:
             assert c in self._VALID_MP_CHARS, f'MP {repr(input_fields.mp)} has invalid char {repr(c)} for {name}/{input_type}'
 
 
+class TestEncodingConsistentAcrossDatabases:
+    """Input encoding must not change depending on which DB is queried."""
+
+    @pytest.mark.parametrize('name,input_type', [
+        ('cemre', 'turkish'),
+        ('Ayşe', 'turkish'),
+        ('Jean', 'french'),
+        ('John', 'english'),
+        ('Wei', 'chinese'),
+    ])
+    def test_input_fields_same_for_english_and_arabic_db(self, name, input_type):
+        _, fields_en = get_similar_names(name, input_type, 'sound', '')
+        _, fields_ar = get_similar_names(name, input_type, 'sound', '', db_path=_ARAB_DB_PATH)
+        assert fields_en.mp == fields_ar.mp, (
+            f"MP differs across DBs for {name}/{input_type}: "
+            f"english={fields_en.mp}, arabic={fields_ar.mp}"
+        )
+        assert fields_en.ipa == fields_ar.ipa, (
+            f"IPA differs across DBs for {name}/{input_type}: "
+            f"english={fields_en.ipa}, arabic={fields_ar.ipa}"
+        )
+
+
 class TestTurkishNameSnapshots:
     def test_cemre_turkish_mp(self):
         results, input_fields = get_similar_names("Cemre", "turkish", "mp", "")
         assert input_fields == NameRepr("Cemre", ipa="d͡ʒemɾe", mp="JMR")
         names = [r[0] for r in results]
         assert names == [
-            "Jamar", "Jamir", "Jamari", "Jamarion", "Jeanmarie",
-            "Hjalmar", "Hjalmer", "Jamie", "Jayme", "Jami",
+            "Jamie", "Jami", "Jim", "Jimmie", "Jimmy",
+            "Jaime", "Jermaine", "James", "Jay", "Jeffrey",
         ]
 
     def test_mehmet_turkish_mp_male(self):
@@ -189,8 +212,8 @@ class TestTurkishNameSnapshots:
         assert input_fields == NameRepr("Mehmet", ipa="mehmet", mp="MHMT")
         names = [r[0] for r in results]
         assert names == [
-            "Muhammad", "Mohammad", "Mohammed", "Mohamed", "Mamie",
-            "May", "Mae", "Mayo", "Moe", "Wm",
+            "Mamie", "Mae", "May", "Marty", "Martin",
+            "Milton", "Myrtle", "Millard", "Meredith", "Margaret",
         ]
 
     def test_ayse_turkish_ipa_female(self):
@@ -198,6 +221,6 @@ class TestTurkishNameSnapshots:
         assert input_fields == NameRepr("Ayşe", ipa="ajʃe", mp="AS")
         names = [r[0] for r in results]
         assert names == [
-            "Anjanette", "Jacey", "Avie", "Anie", "Aisha",
-            "Janae", "Jamey", "Jaden", "Jayde", "Jaeda",
+            "Jaden", "Sade", "Jaylen", "Jaiden", "Shana",
+            "Jazmine", "Ashlee", "Aubree", "Alexus", "Kaylee",
         ]
