@@ -240,7 +240,7 @@ class TestTurkishNameSnapshots:
         names = [r[0] for r in results]
         assert names == [
             "Jimmie", "Jamie", "Jimmy", "Jami", "Jim",
-            "Jaime", "Jermaine", "James", "Jeffrey", "Geoffrey",
+            "Jaime", "Jermaine", "James", "Jay", "Jeffrey",
         ]
 
     def test_mehmet_turkish_mp_male(self):

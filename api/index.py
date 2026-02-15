@@ -293,10 +293,12 @@ def _score_with_order(
             case DistanceDimension.MP:
                 if encoded.mp and name_mp:
                     part = _distance(encoded.mp, name_mp)
+                    score += _first_letter_penalty(encoded.mp, name_mp) / weight
             case DistanceDimension.SEMI:
                 best = _semi_best_match(encoded.semi, name_ipa, name_ipa_alts)
                 if best:
                     part, semi_best = best
+                    score += _first_consonant_penalty(encoded.semi, semi_best, _SEMI_CONSONANTS, weight=0.25) / weight
             case DistanceDimension.SPELLING:
                 part = _spelling_score(encoded.name, name)
             case _:
@@ -304,11 +306,6 @@ def _score_with_order(
 
         if part is not None:
             score += part / weight
-
-    if primary is DistanceDimension.MP and encoded.mp and name_mp:
-        score += _first_letter_penalty(encoded.mp, name_mp)
-    if primary is DistanceDimension.SEMI and encoded.semi and semi_best:
-        score += _first_consonant_penalty(encoded.semi, semi_best, _SEMI_CONSONANTS, weight=0.25)
 
     return score
 
