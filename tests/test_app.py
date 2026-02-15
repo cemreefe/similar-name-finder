@@ -5,7 +5,7 @@ import pytest
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.getcwd())
 
-from api.index import app, get_similar_names, _ARAB_DB_PATH, _repr_order, DistanceDimension
+from api.index import app, get_similar_names, _ARAB_DB_PATH, _repr_order, DistanceDimension, _mp_distance
 import helpers.metaphone_helper as mhelp
 
 
@@ -73,6 +73,14 @@ class TestSemiPhonetic:
     def test_repr_order_env_override(self, monkeypatch):
         monkeypatch.setenv("NAMEF_REPR_ORDER", "mp,semi")
         assert _repr_order() == [DistanceDimension.MP, DistanceDimension.SEMI]
+
+
+class TestMetaphoneDistance:
+    def test_mp_distance_transposition_cheaper_than_missing_chars(self):
+        assert _mp_distance("JMR", "JRM") < _mp_distance("JMR", "J")
+
+    def test_mp_distance_swapped_edge_cheaper_than_novel_edge(self):
+        assert _mp_distance("JMR", "JRM") < _mp_distance("JMR", "JFR")
 
 
 class TestFindRoute:
@@ -171,7 +179,7 @@ class TestGetSimilarNames:
     def test_chinese_pinyin_xiao(self):
         results, input_fields = get_similar_names("Xiao", "chinese", "sound", "")
         assert input_fields.ipa == "ɕjau̯"
-        assert input_fields.mp == "SA"
+        assert input_fields.mp == "S"
         names = [r[0] for r in results]
         assert "Zoe" in names or "Zoey" in names
 
@@ -246,7 +254,7 @@ class TestTurkishNameSnapshots:
         names = [r[0] for r in results]
         assert names == [
             "Jimmie", "Jamie", "Jimmy", "Jami", "Jim",
-            "Jaime", "Jermaine", "James", "Jay", "Jeffrey",
+            "Jaime", "Jerry", "James", "Jeremiah", "Jeremy",
         ]
 
     def test_mehmet_turkish_mp_male(self):
@@ -257,8 +265,8 @@ class TestTurkishNameSnapshots:
         assert input_fields.semi == "MEMET"
         names = [r[0] for r in results]
         assert names == [
-            "Mamie", "Mae", "May", "Marty", "Millard",
-            "Meredith", "Myrtle", "Milton", "Martin", "Mildred",
+            "Maude", "Maud", "Mattie", "Mateo", "Mamie",
+            "Marty", "Millard", "Emmett", "Hyman", "Homer",
         ]
 
     def test_ayse_turkish_ipa_female(self):
@@ -269,6 +277,6 @@ class TestTurkishNameSnapshots:
         assert input_fields.semi == "AYXE"
         names = [r[0] for r in results]
         assert names == [
-            "Asia", "Alisha", "Marsha", "Marcia", "Jaylen",
-            "Jaiden", "Elsa", "Arthur", "Martha", "Jazmine",
+            "Asia", "Alisha", "Marcia", "Marsha", "Jaylen",
+            "Jaiden", "Elsa", "Arthur", "Martha", "Jayla",
         ]

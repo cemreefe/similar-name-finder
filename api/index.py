@@ -10,7 +10,7 @@ import sqlite3
 from metaphone import doublemetaphone
 import helpers.metaphone_helper as mhelp
 from eng_to_ipa import ipa_list
-from jellyfish import jaro_winkler_similarity
+from jellyfish import jaro_winkler_similarity, damerau_levenshtein_distance
 import os
 from urllib.parse import quote, unquote, urlencode
 
@@ -53,6 +53,35 @@ class NameRepr:
 
 def _distance(x, y):
     return 1 - jaro_winkler_similarity(x, y)
+
+def _mp_distance(input_mp: str, db_mp: str) -> float:
+    """
+    MP distance = normalized Damerau–Levenshtein + edge penalty.
+
+    DL treats transpositions as single operations (cost 1) and properly
+    penalizes very short DB codes for missing characters, unlike Jaro–Winkler
+    which over-rewards prefix matches on 1–4 char MP strings.  The edge
+    penalty adds sequential-order information on top: wrong bigrams that
+    appear in the DB code but not in the input code are penalised, with
+    swapped (reversed) edges receiving half the penalty.
+    """
+    max_len = max(len(input_mp), len(db_mp), 1)
+    base = damerau_levenshtein_distance(input_mp, db_mp) / max_len
+
+    def edges(s: str) -> list[str]:
+        return [s[i : i + 2] for i in range(len(s) - 1)]
+
+    input_edges = set(edges(input_mp))
+    db_edges = edges(db_mp)
+    if not db_edges:
+        return base
+
+    wrong = 0.0
+    for e in db_edges:
+        if e in input_edges:
+            continue
+        wrong += 0.5 if e[::-1] in input_edges else 1.0
+    return base + (wrong * 0.03)
 
 
 def _chinese_to_pinyin(text: str) -> str | None:
@@ -302,7 +331,7 @@ def _score_with_order(
         match repr_name:
             case DistanceDimension.MP:
                 if encoded.mp and name_mp:
-                    part = _distance(encoded.mp, name_mp)
+                    part = _mp_distance(encoded.mp, name_mp)
                     score += _first_letter_penalty(encoded.mp, name_mp) / weight
             case DistanceDimension.SEMI:
                 best = _semi_best_match(encoded.semi, name_ipa, name_ipa_alts)

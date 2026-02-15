@@ -110,8 +110,8 @@ METAPHONE_RULES = [
     # Z transforms
     (r'z', 's'),  # Z transforms into S
 
-    # Drop all vowels unless it is the beginning character
-    (r'(?<!^)[aeiou]', ''),
+    # Drop all vowels (incl. y) unless it is the beginning character
+    (r'(?<!^)[aeiouy]', ''),
 
     # Replace vowels with A
     (r'[aeiouy]', r'a'),
