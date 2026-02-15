@@ -37,6 +37,7 @@ class InputType(Enum):
 
 class DistanceDimension(Enum):
     IPA = 'ipa'
+    SEMI = 'semi'
     MP = 'mp'
     SOUND = 'sound'
     SPELLING = 'spelling'
@@ -46,6 +47,7 @@ class DistanceDimension(Enum):
 class NameRepr:
     name: str
     ipa: str | None = None
+    semi: str | None = None
     mp: str | None = None
 
 
@@ -57,8 +59,9 @@ def _encode_romanized(name: str) -> NameRepr:
     normalized = name.capitalize()
     ipa_result = ipa_list(normalized)
     ipa = ipa_result[0][0] if ipa_result else None
+    semi = mhelp.ipa_to_semiphonetic(ipa)
     mp = doublemetaphone(normalized)[0].upper() if doublemetaphone(normalized)[0] else None
-    return NameRepr(name, ipa=ipa, mp=mp)
+    return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
 
 
 def _chinese_to_pinyin(text: str) -> str | None:
@@ -97,8 +100,9 @@ def _encode_pinyin(name: str) -> NameRepr | None:
     if not ipa_parts:
         return None
     ipa = ''.join(ipa_parts)
+    semi = mhelp.ipa_to_semiphonetic(ipa)
     mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
-    return NameRepr(name, ipa=ipa, mp=mp)
+    return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
 
 
 def _hangul_to_phonetic_romanization(text: str) -> str | None:
@@ -133,12 +137,14 @@ def _encode(name, input_type: InputType) -> NameRepr:
             return _encode_romanized(name)
         case InputType.TURKISH:
             ipa = mhelp.turkish_to_ipa(name)
+            semi = mhelp.ipa_to_semiphonetic(ipa)
             mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
-            return NameRepr(name, ipa=ipa, mp=mp)
+            return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
         case InputType.FRENCH:
             ipa = mhelp.french_to_ipa(name)
+            semi = mhelp.ipa_to_semiphonetic(ipa)
             mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
-            return NameRepr(name, ipa=ipa, mp=mp)
+            return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
         case InputType.CHINESE:
             encoded = _encode_pinyin(name)
             return encoded if encoded else _encode_romanized(name)
@@ -146,18 +152,18 @@ def _encode(name, input_type: InputType) -> NameRepr:
             romanized = _hangul_to_phonetic_romanization(name)
             if romanized:
                 enc = _encode_romanized(romanized)
-                return NameRepr(name, ipa=enc.ipa, mp=enc.mp)
+                return NameRepr(name, ipa=enc.ipa, semi=enc.semi, mp=enc.mp)
             return _encode_romanized(name)
         case InputType.JAPANESE:
             romaji = _japanese_to_romaji(name)
             if romaji:
                 enc = _encode_romanized(romaji)
-                return NameRepr(name, ipa=enc.ipa, mp=enc.mp)
+                return NameRepr(name, ipa=enc.ipa, semi=enc.semi, mp=enc.mp)
             return _encode_romanized(name)
         case InputType.FILIPINO:
             return _encode_romanized(name)
         case InputType.IPA:
-            return NameRepr(name, ipa=name)
+            return NameRepr(name, ipa=name, semi=mhelp.ipa_to_semiphonetic(name))
         case InputType.MP:
             return NameRepr(name, mp=name.upper())
         case _ as unreachable:
@@ -199,6 +205,114 @@ def _spelling_score(input_name, name):
     return _distance(a, b)
 
 
+_DEFAULT_REPR_ORDER = (DistanceDimension.MP, DistanceDimension.SEMI, DistanceDimension.SPELLING)
+_SEMI_CONSONANTS = set('BCDFGHJKLMNPQRSTVWXYZ')
+
+
+def _first_consonant(s: str | None, consonants: set[str]) -> str | None:
+    if not s:
+        return None
+    for c in s.upper():
+        if c in consonants:
+            return c
+    return None
+
+
+def _first_consonant_penalty(a: str | None, b: str | None, consonants: set[str], weight: float) -> float:
+    fa = _first_consonant(a, consonants)
+    fb = _first_consonant(b, consonants)
+    if not fa or not fb:
+        return 0.0
+    return 0.0 if fa == fb else weight
+
+
+def _repr_order() -> list[DistanceDimension]:
+    raw = os.environ.get('NAMEF_REPR_ORDER')
+    if not raw:
+        return list(_DEFAULT_REPR_ORDER)
+
+    token_to_dim = {
+        'mp': DistanceDimension.MP,
+        'semi': DistanceDimension.SEMI,
+        'spelling': DistanceDimension.SPELLING,
+    }
+    parts = [p.strip().lower() for p in raw.split(',') if p.strip()]
+    filtered = [token_to_dim[p] for p in parts if p in token_to_dim]
+    return filtered or list(_DEFAULT_REPR_ORDER)
+
+
+def _ipa_alternatives(ipa_alts: str | None) -> list[str]:
+    if not ipa_alts:
+        return []
+    return [p.strip() for p in ipa_alts.split(',') if p.strip()]
+
+
+def _semi_best_match(input_semi: str | None, ipa: str | None, ipa_alts: str | None) -> tuple[float, str] | None:
+    if not input_semi:
+        return None
+    variants = []
+    if ipa:
+        variants.append(mhelp.ipa_to_semiphonetic(ipa))
+    for alt in _ipa_alternatives(ipa_alts):
+        variants.append(mhelp.ipa_to_semiphonetic(alt))
+    variants = [v for v in variants if v]
+    if not variants:
+        return None
+    best: tuple[float, str] | None = None
+    for v in variants:
+        d = mhelp.semiphonetic_distance(input_semi, v)
+        if d is None:
+            continue
+        if best is None or d < best[0]:
+            best = (d, v)
+    return best
+
+
+def _semi_distance(input_semi: str | None, ipa: str | None, ipa_alts: str | None) -> float | None:
+    best = _semi_best_match(input_semi, ipa, ipa_alts)
+    return best[0] if best else None
+
+
+def _score_with_order(
+    encoded: NameRepr,
+    primary: DistanceDimension,
+    order: list[DistanceDimension],
+    name: str,
+    name_mp: str | None,
+    name_ipa: str | None,
+    name_ipa_alts: str | None,
+) -> float:
+    score = 0.0
+    semi_best: str | None = None
+
+    for idx, repr_name in enumerate(order):
+        weight = 1 if idx == 0 else 100 ** idx
+        part = None
+
+        match repr_name:
+            case DistanceDimension.MP:
+                if encoded.mp and name_mp:
+                    part = _distance(encoded.mp, name_mp)
+            case DistanceDimension.SEMI:
+                best = _semi_best_match(encoded.semi, name_ipa, name_ipa_alts)
+                if best:
+                    part, semi_best = best
+            case DistanceDimension.SPELLING:
+                part = _spelling_score(encoded.name, name)
+            case _:
+                part = None
+
+        if part is not None:
+            score += part / weight
+
+    if primary is DistanceDimension.MP and encoded.mp and name_mp:
+        score += _first_letter_penalty(encoded.mp, name_mp)
+    if primary is DistanceDimension.SEMI and encoded.semi and semi_best:
+        score += _first_consonant_penalty(encoded.semi, semi_best, _SEMI_CONSONANTS, weight=0.25)
+
+    return score
+
+
 app = Flask(__name__)
 
 
@@ -208,16 +322,13 @@ def _inject_lang_default_input_type():
     return {'lang_default_input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}
 
 
-def _score(encoded, dim, name, name_mp, name_ipa):
-    match dim:
-        case DistanceDimension.IPA:
-            return _phonetic_score(encoded.ipa, name_ipa, encoded.mp, name_mp, input_name=encoded.name, db_name=name)
-        case DistanceDimension.MP:
-            return _phonetic_score(encoded.mp, name_mp, encoded.ipa, name_ipa, primary_is_mp=True, input_name=encoded.name, db_name=name)
-        case DistanceDimension.SPELLING:
-            return _spelling_score(encoded.name, name)
-        case _ as unreachable:
-            assert_never(unreachable)
+def _score(encoded: NameRepr, dim: DistanceDimension, name: str, name_mp: str | None, name_ipa: str | None, name_ipa_alts: str | None) -> float:
+    if dim is DistanceDimension.SPELLING:
+        return _spelling_score(encoded.name, name)
+
+    primary = DistanceDimension.MP if dim is DistanceDimension.MP else DistanceDimension.SEMI
+    order = [primary] + [x for x in _repr_order() if x is not primary]
+    return _score_with_order(encoded, primary, order, name, name_mp, name_ipa, name_ipa_alts)
 
 
 def get_similar_names(input_name, input_type, distance_dimension, gender, db_path=None):
@@ -225,12 +336,19 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
     encoded = _encode(input_name, InputType(input_type))
 
     if distance_dimension == 'sound':
-        dim = DistanceDimension.MP if encoded.mp else DistanceDimension.IPA
+        order = _repr_order()
+        if DistanceDimension.MP in order and encoded.mp:
+            dim = DistanceDimension.MP
+        elif encoded.semi:
+            dim = DistanceDimension.SEMI
+        else:
+            dim = DistanceDimension.SPELLING
     else:
-        dim = DistanceDimension(distance_dimension)
+        dim_str = 'semi' if distance_dimension == 'ipa' else distance_dimension
+        dim = DistanceDimension(dim_str)
 
-    if dim is DistanceDimension.IPA and encoded.ipa is None:
-        raise ValueError(f"Cannot use IPA distance with {input_type!r} input")
+    if dim in (DistanceDimension.IPA, DistanceDimension.SEMI) and encoded.semi is None:
+        raise ValueError(f"Cannot use semi-phonetic distance with {input_type!r} input")
     if dim is DistanceDimension.MP and encoded.mp is None:
         raise ValueError(f"Cannot use metaphone distance with {input_type!r} input")
 
@@ -252,7 +370,7 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
     for row in all_names:
         name, name_gender, name_mp, name_ipa, name_ipa_alts = row[:5]
         original_writing = row[5] if has_original_writing and len(row) > 5 else None
-        score = _score(encoded, dim, name, name_mp, name_ipa)
+        score = _score(encoded, dim, name, name_mp, name_ipa, name_ipa_alts)
         out_gender = display_gender.get(name_gender, name_gender)
         similar_names.append((name, out_gender, name_mp, name_ipa, name_ipa_alts, score, original_writing))
 
@@ -330,7 +448,7 @@ def _product_url(path: str, name: str | None = None) -> str:
     lang = _get_lang()
     input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
     distance_dimension = request.args.get('distance_dimension') or 'sound'
-    if distance_dimension not in ('sound', 'mp', 'ipa'):
+    if distance_dimension not in ('sound', 'mp', 'ipa', 'semi'):
         distance_dimension = 'sound'
     gender = request.args.get('gender') or ''
     params = _strip_defaults({
@@ -355,7 +473,7 @@ def _lang_url(lang_code):
     args = request.args.to_dict()
     args['lang'] = lang_code
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
-    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
     args = _strip_defaults(args, lang_code)
     return request.path + ('?' + urlencode(args) if args else '')
 
@@ -447,7 +565,7 @@ def _kr_lang_url(lang_code):
     args = request.args.to_dict()
     args['lang'] = lang_code
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
-    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
     args = _strip_defaults(args, lang_code)
     path = request.path if request.path.startswith('/my-name-in-korean/find') else '/my-name-in-korean/'
     return path + ('?' + urlencode(args) if args else '')
@@ -457,7 +575,7 @@ def _ar_lang_url(lang_code):
     args = request.args.to_dict()
     args['lang'] = lang_code
     args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
-    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa') else 'sound'
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
     args = _strip_defaults(args, lang_code)
     path = request.path if request.path.startswith('/my-name-in-arabic/find') else '/my-name-in-arabic/'
     return path + ('?' + urlencode(args) if args else '')

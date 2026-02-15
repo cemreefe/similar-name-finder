@@ -5,7 +5,8 @@ import pytest
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.getcwd())
 
-from api.index import app, get_similar_names, NameRepr, _ARAB_DB_PATH
+from api.index import app, get_similar_names, _ARAB_DB_PATH, _repr_order, DistanceDimension
+import helpers.metaphone_helper as mhelp
 
 
 @pytest.fixture
@@ -54,6 +55,18 @@ class TestFindRedirect:
         response = client.get("/find?name=John&lang=pt-BR&input_type=english&distance_dimension=sound&gender=")
         assert response.status_code == 302
         assert response.headers["Location"] == "/find/John?lang=pt-BR"
+
+
+class TestSemiPhonetic:
+    def test_ipa_to_semiphonetic_strips_stress_marks(self):
+        assert mhelp.ipa_to_semiphonetic("ˈɛlə") == "ELE"
+
+    def test_ipa_to_semiphonetic_turkish_ayse(self):
+        assert mhelp.ipa_to_semiphonetic("ajʃe") == "AYXE"
+
+    def test_repr_order_env_override(self, monkeypatch):
+        monkeypatch.setenv("NAMEF_REPR_ORDER", "mp,semi")
+        assert _repr_order() == [DistanceDimension.MP, DistanceDimension.SEMI]
 
 
 class TestFindRoute:
@@ -220,27 +233,36 @@ class TestEncodingConsistentAcrossDatabases:
 class TestTurkishNameSnapshots:
     def test_cemre_turkish_mp(self):
         results, input_fields = get_similar_names("Cemre", "turkish", "mp", "")
-        assert input_fields == NameRepr("Cemre", ipa="d͡ʒemɾe", mp="JMR")
+        assert input_fields.name == "Cemre"
+        assert input_fields.ipa == "d͡ʒemɾe"
+        assert input_fields.mp == "JMR"
+        assert input_fields.semi == "JEMRE"
         names = [r[0] for r in results]
         assert names == [
-            "Jamie", "Jami", "Jim", "Jimmie", "Jimmy",
-            "Jaime", "Jermaine", "James", "Jay", "Jeffrey",
+            "Jimmie", "Jamie", "Jimmy", "Jami", "Jim",
+            "Jaime", "Jermaine", "James", "Jeffrey", "Geoffrey",
         ]
 
     def test_mehmet_turkish_mp_male(self):
         results, input_fields = get_similar_names("Mehmet", "turkish", "mp", "male")
-        assert input_fields == NameRepr("Mehmet", ipa="mehmet", mp="MHMT")
+        assert input_fields.name == "Mehmet"
+        assert input_fields.ipa == "mehmet"
+        assert input_fields.mp == "MHMT"
+        assert input_fields.semi == "MEHMET"
         names = [r[0] for r in results]
         assert names == [
-            "Mamie", "Mae", "May", "Marty", "Martin",
-            "Milton", "Myrtle", "Millard", "Meredith", "Margaret",
+            "Mamie", "Mae", "May", "Marty", "Myrtle",
+            "Martin", "Milton", "Millard", "Meredith", "Margaret",
         ]
 
     def test_ayse_turkish_ipa_female(self):
         results, input_fields = get_similar_names("Ayşe", "turkish", "ipa", "female")
-        assert input_fields == NameRepr("Ayşe", ipa="ajʃe", mp="AS")
+        assert input_fields.name == "Ayşe"
+        assert input_fields.ipa == "ajʃe"
+        assert input_fields.mp == "AS"
+        assert input_fields.semi == "AYXE"
         names = [r[0] for r in results]
         assert names == [
-            "Jaden", "Sade", "Jaylen", "Jaiden", "Shana",
-            "Jazmine", "Ashlee", "Aubree", "Alexus", "Kaylee",
+            "Asia", "Alisha", "Marsha", "Marcia", "Jaylen",
+            "Jaiden", "Elsa", "Arthur", "Martha", "Jazmine",
         ]

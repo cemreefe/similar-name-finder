@@ -160,6 +160,146 @@ def map_ipa_to_metaphone(ipa_str):
     return ''.join(c for c in code if c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0 ')
 
 
+_SEMI_STRIP_CHARS = {
+    'ˈ', 'ˌ', 'ː', 'ˑ', '˞', '.', '·', '‿', ' ', '\t', '\n',
+    '͡', '̯', '̩', '̃', '̆', '̈', '̊', '̥', '̬', '̪', '̺', '̹', '̜', '̟', '̠', '̤',
+}
+
+_SEMI_MULTI = (
+    ('d͡ʒ', 'J'),
+    ('t͡ʃ', 'C'),
+    ('tʃ', 'C'),
+    ('dʒ', 'J'),
+    ('ts', 'C'),
+    ('tɕʰ', 'C'),
+    ('tɕ', 'C'),
+)
+
+_SEMI_SINGLE = {
+    # Vowels (coarsely grouped)
+    'i': 'I', 'ɪ': 'I', 'ɨ': 'I',
+    'e': 'E', 'ɛ': 'E', 'ə': 'E', 'ɘ': 'E', 'ɜ': 'E',
+    'a': 'A', 'ɑ': 'A', 'æ': 'A', 'ɐ': 'A', 'ʌ': 'A',
+    'o': 'O', 'ɔ': 'O', 'ø': 'O', 'œ': 'O', 'ɒ': 'O', 'ɵ': 'O',
+    'u': 'U', 'ʊ': 'U', 'ɯ': 'U', 'y': 'U', 'ʏ': 'U', 'ʉ': 'U',
+
+    # Stops
+    'p': 'P', 'b': 'P',
+    't': 'T', 'd': 'T',
+    'k': 'K', 'ɡ': 'K', 'g': 'K', 'ɟ': 'K', 'q': 'K',
+
+    # Fricatives (keep s vs sh separate for better nuance)
+    'f': 'F', 'v': 'F',
+    's': 'S', 'z': 'S',
+    'ʃ': 'X', 'ʒ': 'X', 'ʂ': 'X', 'ɕ': 'X', 'ç': 'X',
+    'θ': 'S', 'ð': 'S',
+    'h': 'H', 'x': 'H', 'ɣ': 'H', 'ɦ': 'H',
+
+    # Nasals
+    'm': 'M', 'ɱ': 'M',
+    'n': 'N', 'ŋ': 'N', 'ɲ': 'N',
+
+    # Liquids / glides
+    'r': 'R', 'ɾ': 'R', 'ʀ': 'R', 'ʁ': 'R',
+    'l': 'L', 'ɫ': 'L', 'ʎ': 'L',
+    'j': 'Y', 'w': 'W', 'ɥ': 'W',
+
+    # Glottal stop is usually not helpful for matching
+    'ʔ': '',
+}
+
+
+def ipa_to_semiphonetic(ipa: str | None) -> str | None:
+    """
+    Convert IPA into a simplified, coarse phonetic string.
+
+    Goal: preserve broad sound shape, merge commonly-confused variants into the
+    same token, and output ASCII-only characters for stable distance scoring.
+    """
+    if not ipa:
+        return None
+
+    s = unicodedata.normalize('NFD', ipa)
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+    s = ''.join(c for c in s if c not in _SEMI_STRIP_CHARS)
+
+    # Multi-character tokens first (affricates, clusters)
+    out = s
+    for pat, rep in _SEMI_MULTI:
+        out = out.replace(pat, rep)
+
+    mapped = []
+    for c in out:
+        mapped.append(_SEMI_SINGLE.get(c, c))
+
+    result = ''.join(mapped)
+    result = re.sub(r'(.)\1+', r'\1', result)
+    result = ''.join(c for c in result.upper() if 'A' <= c <= 'Z')
+    return result or None
+
+
+def _semi_char_similarity(a: str, b: str) -> float:
+    if a == b:
+        return 1.0
+
+    vowels = {'A', 'E', 'I', 'O', 'U'}
+    if a in vowels and b in vowels:
+        return 0.45
+
+    # SH is closer to S than to other consonants
+    if (a, b) in (('S', 'X'), ('X', 'S')):
+        return 0.75
+
+    # Affricates are somewhat close
+    if (a, b) in (('C', 'J'), ('J', 'C')):
+        return 0.6
+
+    # Glides and liquids: mild closeness
+    if a in {'Y', 'W'} and b in {'Y', 'W'}:
+        return 0.6
+    if a in {'L', 'R'} and b in {'L', 'R'}:
+        return 0.5
+
+    # Nasals: mild closeness
+    if a in {'M', 'N'} and b in {'M', 'N'}:
+        return 0.5
+
+    return 0.0
+
+
+def semiphonetic_distance(a: str | None, b: str | None) -> float | None:
+    if not a or not b:
+        return None
+    if a == b:
+        return 0.0
+
+    la, lb = len(a), len(b)
+    if la == 0 or lb == 0:
+        return 1.0
+
+    ins = 1.0
+    delete = 1.0
+
+    dp = [[0.0] * (lb + 1) for _ in range(la + 1)]
+    for i in range(1, la + 1):
+        dp[i][0] = i * delete
+    for j in range(1, lb + 1):
+        dp[0][j] = j * ins
+
+    for i in range(1, la + 1):
+        ca = a[i - 1]
+        for j in range(1, lb + 1):
+            cb = b[j - 1]
+            sub = 1.0 - _semi_char_similarity(ca, cb)
+            dp[i][j] = min(
+                dp[i - 1][j] + delete,
+                dp[i][j - 1] + ins,
+                dp[i - 1][j - 1] + sub,
+            )
+
+    return dp[la][lb] / max(la, lb)
+
+
 def hangul_to_phonetic_romanization(text: str) -> str | None:
     """Convert Hangul to pronunciation-aware romanization (avoids ghost letters like 'r' in Park)."""
     if not any('\uac00' <= c <= '\ud7af' for c in text):
