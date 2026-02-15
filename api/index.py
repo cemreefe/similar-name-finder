@@ -55,15 +55,6 @@ def _distance(x, y):
     return 1 - jaro_winkler_similarity(x, y)
 
 
-def _encode_romanized(name: str) -> NameRepr:
-    normalized = name.capitalize()
-    ipa_result = ipa_list(normalized)
-    ipa = ipa_result[0][0] if ipa_result else None
-    semi = mhelp.ipa_to_semiphonetic(ipa)
-    mp = doublemetaphone(normalized)[0].upper() if doublemetaphone(normalized)[0] else None
-    return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
-
-
 def _chinese_to_pinyin(text: str) -> str | None:
     try:
         from pypinyin import pinyin, Style
@@ -74,35 +65,6 @@ def _chinese_to_pinyin(text: str) -> str | None:
         return ' '.join(s[0] for s in syls).lower()
     except Exception:
         return None
-
-
-def _encode_pinyin(name: str) -> NameRepr | None:
-    try:
-        from pinyin_to_ipa import pinyin_to_ipa
-    except ImportError:
-        return None
-    pinyin_str = name.lower().strip()
-    if any('\u4e00' <= c <= '\u9fff' for c in name):
-        pinyin_str = _chinese_to_pinyin(name)
-        if not pinyin_str:
-            return None
-    parts = pinyin_str.split()
-    ipa_parts = []
-    for part in parts:
-        try:
-            result = pinyin_to_ipa(part)
-            if not result:
-                return None
-            first = list(result)[0]
-            ipa_parts.append(''.join(str(x) for x in first))
-        except Exception:
-            return None
-    if not ipa_parts:
-        return None
-    ipa = ''.join(ipa_parts)
-    semi = mhelp.ipa_to_semiphonetic(ipa)
-    mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
-    return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
 
 
 def _hangul_to_phonetic_romanization(text: str) -> str | None:
@@ -132,42 +94,101 @@ def _japanese_to_romaji(text: str) -> str | None:
 
 
 def _encode(name, input_type: InputType) -> NameRepr:
-    match input_type:
-        case InputType.ENGLISH:
-            return _encode_romanized(name)
-        case InputType.TURKISH:
-            ipa = mhelp.turkish_to_ipa(name)
-            semi = mhelp.ipa_to_semiphonetic(ipa)
-            mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
-            return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
-        case InputType.FRENCH:
-            ipa = mhelp.french_to_ipa(name)
-            semi = mhelp.ipa_to_semiphonetic(ipa)
-            mp = mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
-            return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
-        case InputType.CHINESE:
-            encoded = _encode_pinyin(name)
-            return encoded if encoded else _encode_romanized(name)
-        case InputType.KOREAN:
-            romanized = _hangul_to_phonetic_romanization(name)
-            if romanized:
-                enc = _encode_romanized(romanized)
-                return NameRepr(name, ipa=enc.ipa, semi=enc.semi, mp=enc.mp)
-            return _encode_romanized(name)
-        case InputType.JAPANESE:
-            romaji = _japanese_to_romaji(name)
-            if romaji:
-                enc = _encode_romanized(romaji)
-                return NameRepr(name, ipa=enc.ipa, semi=enc.semi, mp=enc.mp)
-            return _encode_romanized(name)
-        case InputType.FILIPINO:
-            return _encode_romanized(name)
-        case InputType.IPA:
-            return NameRepr(name, ipa=name, semi=mhelp.ipa_to_semiphonetic(name))
-        case InputType.MP:
-            return NameRepr(name, mp=name.upper())
-        case _ as unreachable:
-            assert_never(unreachable)
+    def romanized_normalized(s: str) -> str:
+        return (s or '').capitalize()
+
+    def romanized_ipa(s: str) -> str | None:
+        normalized = romanized_normalized(s)
+        ipa_result = ipa_list(normalized)
+        return ipa_result[0][0] if ipa_result else None
+
+    def romanized_mp(s: str) -> str | None:
+        normalized = romanized_normalized(s)
+        raw = doublemetaphone(normalized)[0]
+        return raw.upper() if raw else None
+
+    def chinese_ipa(s: str) -> str | None:
+        try:
+            from pinyin_to_ipa import pinyin_to_ipa
+        except ImportError:
+            return None
+
+        pinyin_str = (s or '').lower().strip()
+        if not pinyin_str:
+            return None
+
+        if any('\u4e00' <= c <= '\u9fff' for c in s):
+            pinyin_str = _chinese_to_pinyin(s) or ''
+        if not pinyin_str:
+            return None
+
+        ipa_parts: list[str] = []
+        for part in pinyin_str.split():
+            try:
+                result = pinyin_to_ipa(part)
+                if not result:
+                    return None
+                first = list(result)[0]
+                ipa_parts.append(''.join(str(x) for x in first))
+            except Exception:
+                return None
+        return ''.join(ipa_parts) if ipa_parts else None
+
+    def korean_romanized(s: str) -> str | None:
+        return _hangul_to_phonetic_romanization(s)
+
+    def japanese_romanized(s: str) -> str | None:
+        return _japanese_to_romaji(s)
+
+    def _transform(s: str, it: InputType, rep: DistanceDimension, cached_ipa: str | None = None) -> str | None:
+        match (it, rep):
+            case (InputType.MP, DistanceDimension.MP):
+                return (s or '').upper() or None
+            case (InputType.IPA, DistanceDimension.IPA):
+                return (s or '').strip() or None
+            case (InputType.IPA, DistanceDimension.SEMI):
+                return mhelp.ipa_to_semiphonetic((s or '').strip() or None)
+            case (_, DistanceDimension.SEMI):
+                ipa = cached_ipa if cached_ipa is not None else _transform(s, it, DistanceDimension.IPA)
+                return mhelp.ipa_to_semiphonetic(ipa)
+            case (InputType.TURKISH, DistanceDimension.IPA):
+                return mhelp.turkish_to_ipa(s)
+            case (InputType.FRENCH, DistanceDimension.IPA):
+                return mhelp.french_to_ipa(s)
+            case (InputType.CHINESE, DistanceDimension.IPA):
+                return chinese_ipa(s) or romanized_ipa(s)
+            case (InputType.KOREAN, DistanceDimension.IPA):
+                romanized = korean_romanized(s)
+                return romanized_ipa(romanized) if romanized else romanized_ipa(s)
+            case (InputType.JAPANESE, DistanceDimension.IPA):
+                romanized = japanese_romanized(s)
+                return romanized_ipa(romanized) if romanized else romanized_ipa(s)
+            case (InputType.ENGLISH | InputType.FILIPINO, DistanceDimension.IPA):
+                return romanized_ipa(s)
+
+            case (InputType.TURKISH | InputType.FRENCH, DistanceDimension.MP):
+                ipa = cached_ipa if cached_ipa is not None else _transform(s, it, DistanceDimension.IPA)
+                return mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P') if ipa else None
+            case (InputType.CHINESE, DistanceDimension.MP):
+                ipa = cached_ipa if cached_ipa is not None else _transform(s, it, DistanceDimension.IPA)
+                return mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P') if ipa else romanized_mp(s)
+            case (InputType.ENGLISH | InputType.FILIPINO, DistanceDimension.MP):
+                return romanized_mp(s)
+            case (InputType.KOREAN, DistanceDimension.MP):
+                romanized = korean_romanized(s)
+                return romanized_mp(romanized) if romanized else romanized_mp(s)
+            case (InputType.JAPANESE, DistanceDimension.MP):
+                romanized = japanese_romanized(s)
+                return romanized_mp(romanized) if romanized else romanized_mp(s)
+            case (_, DistanceDimension.MP):
+                return None
+            case (_, _):
+                return None
+
+    ipa = _transform(name, input_type, DistanceDimension.IPA)
+    semi = _transform(name, input_type, DistanceDimension.SEMI, cached_ipa=ipa)
+    mp = _transform(name, input_type, DistanceDimension.MP, cached_ipa=ipa)
+    return NameRepr(name, ipa=ipa, semi=semi, mp=mp)
 
 
 _CONSONANTS = set('BCDFGHJKLMNPQRSTVWXYZ0')
@@ -179,17 +200,6 @@ def _first_letter_penalty(input_mp: str, name_mp: str, weight: float = 0.15) -> 
     if first_in not in _CONSONANTS:
         return 0.0
     return 0.0 if first_in == first_db else weight
-
-
-def _phonetic_score(primary_input, primary_db, secondary_input, secondary_db, primary_is_mp=False, input_name=None, db_name=None):
-    score = _distance(primary_input, primary_db)
-    if secondary_input and secondary_db:
-        score += _distance(secondary_input, secondary_db) / 100
-    if input_name and db_name:
-        score += _spelling_score(input_name, db_name) / 10000
-    if primary_is_mp and primary_input and primary_db:
-        score += _first_letter_penalty(primary_input, primary_db)
-    return score
 
 
 def _strip_diacritics(text):

@@ -235,34 +235,75 @@ def ipa_to_semiphonetic(ipa: str | None) -> str | None:
     result = ''.join(mapped)
     result = re.sub(r'(.)\1+', r'\1', result)
     result = ''.join(c for c in result.upper() if 'A' <= c <= 'Z')
+    result = re.sub(r'([AEIOU])H(?=[B-DF-HJ-NP-TV-Z])', r'\1', result)
     return result or None
+
+
+_SEMI_VOWELS = {'A', 'E', 'I', 'O', 'U'}
+
+
+def _pair(a: str, b: str) -> tuple[str, str]:
+    return (a, b) if a <= b else (b, a)
+
+
+_SEMI_SIMILARITY: dict[tuple[str, str], float] = {
+    # Vowels: rough height/backness grouping
+    _pair('E', 'I'): 0.75,  # front vowels closer to each other
+    _pair('O', 'U'): 0.75,  # back vowels closer to each other
+    _pair('A', 'E'): 0.45,
+    _pair('A', 'I'): 0.35,
+    _pair('A', 'O'): 0.40,
+    _pair('A', 'U'): 0.35,
+    _pair('E', 'O'): 0.25,
+    _pair('E', 'U'): 0.20,
+    _pair('I', 'O'): 0.20,
+    _pair('I', 'U'): 0.25,
+
+    # Sibilants: SH is closer to S than to other consonants
+    _pair('S', 'X'): 0.80,
+
+    # Labials: V/F/B/W family with varying similarity
+    _pair('F', 'V'): 0.85,
+    _pair('B', 'P'): 0.75,
+    _pair('B', 'V'): 0.55,
+    _pair('B', 'F'): 0.45,
+    _pair('P', 'F'): 0.45,
+    _pair('P', 'V'): 0.40,
+    _pair('W', 'V'): 0.60,
+    _pair('W', 'F'): 0.45,
+    _pair('W', 'B'): 0.35,
+    _pair('W', 'P'): 0.35,
+
+    # Alveolar stops (if they appear in semi strings)
+    _pair('T', 'D'): 0.85,
+
+    # Velars (if they appear in semi strings)
+    _pair('K', 'G'): 0.85,
+
+    # Affricates are somewhat close
+    _pair('C', 'J'): 0.65,
+
+    # Glides and liquids: mild closeness
+    _pair('Y', 'W'): 0.55,
+    _pair('L', 'R'): 0.50,
+
+    # Nasals: mild closeness
+    _pair('M', 'N'): 0.60,
+}
 
 
 def _semi_char_similarity(a: str, b: str) -> float:
     if a == b:
         return 1.0
 
-    vowels = {'A', 'E', 'I', 'O', 'U'}
-    if a in vowels and b in vowels:
-        return 0.45
+    key = _pair(a, b)
+    if key in _SEMI_SIMILARITY:
+        return _SEMI_SIMILARITY[key]
 
-    # SH is closer to S than to other consonants
-    if (a, b) in (('S', 'X'), ('X', 'S')):
-        return 0.75
-
-    # Affricates are somewhat close
-    if (a, b) in (('C', 'J'), ('J', 'C')):
-        return 0.6
-
-    # Glides and liquids: mild closeness
-    if a in {'Y', 'W'} and b in {'Y', 'W'}:
-        return 0.6
-    if a in {'L', 'R'} and b in {'L', 'R'}:
-        return 0.5
-
-    # Nasals: mild closeness
-    if a in {'M', 'N'} and b in {'M', 'N'}:
-        return 0.5
+    if a in _SEMI_VOWELS and b in _SEMI_VOWELS:
+        # Default: vowels are closer than arbitrary consonants,
+        # but less close than our explicit pairings.
+        return 0.30
 
     return 0.0
 

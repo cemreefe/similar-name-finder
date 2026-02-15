@@ -64,6 +64,12 @@ class TestSemiPhonetic:
     def test_ipa_to_semiphonetic_turkish_ayse(self):
         assert mhelp.ipa_to_semiphonetic("ajʃe") == "AYXE"
 
+    def test_semiphonetic_distance_prefers_f_over_b_for_v(self):
+        assert mhelp.semiphonetic_distance("V", "F") < mhelp.semiphonetic_distance("V", "B")
+
+    def test_semiphonetic_distance_prefers_i_over_u_for_e(self):
+        assert mhelp.semiphonetic_distance("E", "I") < mhelp.semiphonetic_distance("E", "U")
+
     def test_repr_order_env_override(self, monkeypatch):
         monkeypatch.setenv("NAMEF_REPR_ORDER", "mp,semi")
         assert _repr_order() == [DistanceDimension.MP, DistanceDimension.SEMI]
@@ -248,11 +254,11 @@ class TestTurkishNameSnapshots:
         assert input_fields.name == "Mehmet"
         assert input_fields.ipa == "mehmet"
         assert input_fields.mp == "MHMT"
-        assert input_fields.semi == "MEHMET"
+        assert input_fields.semi == "MEMET"
         names = [r[0] for r in results]
         assert names == [
-            "Mamie", "Mae", "May", "Marty", "Myrtle",
-            "Martin", "Milton", "Millard", "Meredith", "Margaret",
+            "Mamie", "Mae", "May", "Marty", "Millard",
+            "Meredith", "Myrtle", "Milton", "Martin", "Mildred",
         ]
 
     def test_ayse_turkish_ipa_female(self):
