@@ -374,9 +374,21 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
 
     display_gender = {'boy': 'male', 'girl': 'female'}
     similar_names = []
+
+    def _has_mp(mp: str | None) -> bool:
+        if mp is None:
+            return False
+        s = mp.strip()
+        return bool(s) and s not in {'-', '—'}
+
     for row in all_names:
         name, name_gender, name_mp, name_ipa, name_ipa_alts = row[:5]
         original_writing = row[5] if has_original_writing and len(row) > 5 else None
+
+        # If we're doing MP distance, rows without MP can't be meaningfully scored.
+        if dim is DistanceDimension.MP and not _has_mp(name_mp):
+            continue
+
         score = _score(encoded, dim, name, name_mp, name_ipa, name_ipa_alts)
         out_gender = display_gender.get(name_gender, name_gender)
         similar_names.append((name, out_gender, name_mp, name_ipa, name_ipa_alts, score, original_writing))
