@@ -422,7 +422,7 @@ def french_to_ipa(text: str) -> str:
         c = text[i]
         next_c = text[i + 1] if i + 1 < len(text) else ''
         next2 = text[i + 2] if i + 2 < len(text) else ''
-        next_soft = next_c in soft_vowels
+        next_soft = next_c != '' and next_c in soft_vowels
         if i + 3 <= len(text) and text[i:i+3] == 'eau':
             result.append('o')
             i += 3
@@ -500,7 +500,7 @@ def french_to_ipa(text: str) -> str:
                 result.append('i')
             case 'ô' | 'ö':
                 result.append('o')
-            case 'ù' | 'û' | 'ü':
+            case 'u' | 'ù' | 'û' | 'ü':
                 result.append('y')
             case 'œ':
                 result.append('œ')
