@@ -17,7 +17,7 @@ import unicodedata
 
 # Dictionary mapping IPA sounds to their closest English sound equivalents
 IPA_TO_ENGLISH = {
-    'tɕʰ': 'ch', 'tɕ': 'ch', 'ʰ': '', '̯': '', 'ɹ̩': '', '̩': '', 'ŋ': 'ng',
+    'tɕʰ': 'ch', 'tɕ': 'J', 'ʰ': '', '̯': '', 'ɹ̩': '', '̩': '', 'ŋ': 'ng',
     'x': 'h',
     'j': 'y',
     'ɑ': 'a', 'æ': 'ae', 'ɐ': 'a', 'ɒ': 'o', 'ɔ': 'o', 'ɕ': 'sh', 'ç': 'sh', 'ð': 'th',
