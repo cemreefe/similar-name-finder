@@ -40,6 +40,9 @@ IPA_TO_ENGLISH = {
 
 # Metaphone encoding rules
 METAPHONE_RULES = [
+    # X at word start becomes S (must come before ch→x)
+    (r'^x', 's'),
+
     # Drop duplicate adjacent letters, except for C
     (r'([bcdfgjklmnpqrstvwxyz])\1+', r'\1'),
 
@@ -50,7 +53,7 @@ METAPHONE_RULES = [
     (r'mb$', ''),
 
     # C transforms
-    (r'ch', 'x'),  # X if followed by IA or H
+    (r'ch', 'X'),  # X represents sh/ch sound (uppercase to avoid x→ks rule)  # X if followed by IA or H
     (r'c(i|e|y)', 's'),  # S if followed by I, E, or Y
     (r'c', 'k'),  # K otherwise
 
@@ -67,8 +70,8 @@ METAPHONE_RULES = [
     (r'g(i|e|y)', 'j'),  # J if before I, E or Y and is not a GG
     (r'g', 'k'),  # K otherwise
 
-    # Drop H conditions
-    (r'h([aeiou])', r'\1'),  # if after a vowel and not before a vowel
+    # Drop H if after a vowel and before a vowel
+    (r'(?<=[aeiou])h([aeiou])', r'\1'),
     (r'h([csptg])', r'\1'),  # if after C, S, P, T or G
 
     # Drop K if after C
@@ -81,11 +84,11 @@ METAPHONE_RULES = [
     (r'q', 'k'),  # Q transforms into K
 
     # S transforms
-    (r's(ia|io|h)', 'x'),  # S transforms into X if followed by H, IO or IA
+    (r's(ia|io|h)', 'X'),  # S transforms into X if followed by H, IO or IA
     (r's', 's'),
 
     # T transforms
-    (r't(ia|io)', 'x'),  # T transforms into X if followed by IA or IO
+    (r't(ia|io)', 'X'),  # T transforms into X if followed by IA or IO
     (r'th', '0'),  # TH transforms into 0 (zero)
 
     # Drop T if followed by CH
@@ -100,8 +103,7 @@ METAPHONE_RULES = [
     # WH transforms
     (r'wh', 'w'),  # WH transforms into W if at the beginning of the string
 
-    # X transforms
-    (r'^x', 's'),  # X transforms into S if at the beginning
+    # X transforms (^x→s moved to top of rules)
     (r'x', 'ks'),  # KS otherwise
 
     # Drop Y if not followed by a vowel

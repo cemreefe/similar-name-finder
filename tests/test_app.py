@@ -179,9 +179,9 @@ class TestGetSimilarNames:
     def test_chinese_pinyin_xiao(self):
         results, input_fields = get_similar_names("Xiao", "chinese", "sound", "")
         assert input_fields.ipa == "ɕjau̯"
-        assert input_fields.mp == "S"
+        assert input_fields.mp == "X"
         names = [r[0] for r in results]
-        assert "Zoe" in names or "Zoey" in names
+        assert "Shawn" in names or "Shane" in names
 
     def test_chinese_character_fang(self):
         results, input_fields = get_similar_names("芳", "chinese", "sound", "")
@@ -273,10 +273,10 @@ class TestTurkishNameSnapshots:
         results, input_fields = get_similar_names("Ayşe", "turkish", "ipa", "female")
         assert input_fields.name == "Ayşe"
         assert input_fields.ipa == "ajʃe"
-        assert input_fields.mp == "AS"
+        assert input_fields.mp == "AX"
         assert input_fields.semi == "AYXE"
         names = [r[0] for r in results]
         assert names == [
-            "Asia", "Alisha", "Marcia", "Marsha", "Jaylen",
+            "Asia", "Alisha", "Marsha", "Marcia", "Jaylen",
             "Jaiden", "Elsa", "Arthur", "Martha", "Jayla",
         ]
