@@ -204,8 +204,14 @@ def _encode(name, input_type: InputType) -> NameRepr:
             case (InputType.ENGLISH | InputType.FILIPINO, DistanceDimension.MP):
                 return romanized_mp(s)
             case (InputType.KOREAN, DistanceDimension.MP):
+                if any('\uac00' <= c <= '\ud7af' for c in s):
+                    mp = mhelp.hangul_to_metaphone(s)
+                    if mp:
+                        return mp.upper()
                 romanized = korean_romanized(s)
-                return romanized_mp(romanized) if romanized else romanized_mp(s)
+                if romanized:
+                    return romanized_mp(mhelp.normalize_korean_for_metaphone(romanized))
+                return romanized_mp(mhelp.normalize_korean_for_metaphone(s))
             case (InputType.JAPANESE, DistanceDimension.MP):
                 romanized = japanese_romanized(s)
                 return romanized_mp(romanized) if romanized else romanized_mp(s)

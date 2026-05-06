@@ -361,12 +361,10 @@ def hangul_to_phonetic_romanization(text: str) -> str | None:
         return None
 
 
-def _normalize_korean_for_metaphone(romanized: str) -> str:
-    """Korean ㄱ is romanized as 'g' but is phonetically [k] at syllable onset; Metaphone treats g+e/i→J."""
-    words = romanized.split()
-    if words and words[0].startswith('g'):
-        words[0] = 'k' + words[0][1:]
-    return ' '.join(words)
+def normalize_korean_for_metaphone(romanized: str) -> str:
+    """Normalize romanized Korean before Metaphone to avoid English soft-g behavior."""
+    s = (romanized or '').lower()
+    return re.sub(r'[gk]+', 'k', s)
 
 
 def hangul_to_metaphone(text: str):
@@ -374,7 +372,7 @@ def hangul_to_metaphone(text: str):
     from metaphone import doublemetaphone
     romanized = hangul_to_phonetic_romanization(text)
     if romanized:
-        normalized = _normalize_korean_for_metaphone(romanized)
+        normalized = normalize_korean_for_metaphone(romanized)
         return doublemetaphone(normalized)[0]
     return None
 

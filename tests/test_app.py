@@ -190,10 +190,19 @@ class TestGetSimilarNames:
         names = [r[0] for r in results]
         assert "Fawn" in names or "Fanny" in names
 
-    def test_korean_hangul_input(self):
-        results, input_fields = get_similar_names("김", "korean", "sound", "")
+    @pytest.mark.parametrize("name,expected_mp", [
+        ("김", "KM"), ("이", "A"), ("박", "PK"), ("최", "X"), ("정", "JNK"),
+        ("민", "MN"), ("준", "JN"), ("지", "J"), ("우", "A"), ("현", "HN"),
+        ("서연", "SN"), ("지우", "J"), ("민준", "MNJN"), ("하윤", "HN"), ("예린", "ARN"),
+        ("수빈", "SPN"), ("도윤", "TN"), ("윤아", "AN"), ("민서", "MNS"), ("지민", "JMN"),
+        ("기", "K"), ("기민", "KMN"), ("민기", "MNK"),
+        # romanized Korean — exercises the non-Hangul fallback path
+        ("gimin", "KMN"), ("gieun", "KN"),
+    ])
+    def test_korean_hangul_input(self, name, expected_mp):
+        results, input_fields = get_similar_names(name, "korean", "sound", "")
         assert input_fields.ipa is not None
-        assert input_fields.mp is not None
+        assert input_fields.mp == expected_mp
         assert len(results) == 10
 
     def test_japanese_kanji_input(self):
