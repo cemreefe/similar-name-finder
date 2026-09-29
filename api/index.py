@@ -3,9 +3,9 @@ from enum import Enum
 from typing import assert_never
 from flask import Flask, Response, render_template, request, redirect, url_for
 try:
-    from api.translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, LANGUAGES, RTL_LANGUAGES
+    from api.translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, get_world_page_translations, WORLD_PRODUCTS, LANGUAGES, RTL_LANGUAGES
 except ImportError:
-    from translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, LANGUAGES, RTL_LANGUAGES
+    from translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, get_world_page_translations, WORLD_PRODUCTS, LANGUAGES, RTL_LANGUAGES
 import sqlite3
 from metaphone import doublemetaphone
 import helpers.metaphone_helper as mhelp
@@ -21,6 +21,7 @@ _DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'names_database.db')
 _ARAB_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'arabnames_database.db')
 _TURKISH_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'turkish_database.db')
 _KOREAN_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'korean_database.db')
+_WORLD_DB_PATHS = {p: os.path.join(os.path.dirname(_THIS_DIR), f'{p}_database.db') for p in WORLD_PRODUCTS}
 import re
 import unicodedata
 
@@ -419,6 +420,7 @@ def _inject_seo_context():
         'canonical_url': _BASE_URL + _canonical_path(),
         'product_home_url': _BASE_URL + PRODUCT_PATHS[product],
         'robots_noindex': _is_filtered_request(),
+        'world_finders': [(p, WORLD_FLAGS[p]) for p in WORLD_PRODUCTS if p != product],
         'popular_links': [
             (name, _search_path(product, name, input_type, lang))
             for name, input_type in POPULAR_SEARCHES[product]
@@ -593,7 +595,16 @@ PRODUCT_PATHS = {
     'arabic': '/my-name-in-arabic/',
     'turkish': '/my-name-in-turkish/',
     'korean': '/my-name-in-korean/',
+    **{p: f'/my-name-in-{p}/' for p in WORLD_PRODUCTS},
 }
+
+WORLD_FLAGS = {'japanese': '🇯🇵', 'chinese': '🇨🇳', 'spanish': '🇪🇸', 'hindi': '🇮🇳', 'russian': '🇷🇺'}
+
+_WORLD_POPULAR_SEARCHES = (
+    ('John', 'english'), ('Emma', 'english'), ('Michael', 'english'), ('Olivia', 'english'),
+    ('James', 'english'), ('Sophia', 'english'), ('David', 'english'), ('Sarah', 'english'),
+    ('Daniel', 'english'), ('Maria', 'english'), ('Mehmet', 'turkish'), ('Giuseppe', 'italian'),
+)
 
 POPULAR_SEARCHES = {
     'index': (
@@ -617,6 +628,7 @@ POPULAR_SEARCHES = {
         ('James', 'english'), ('Sophia', 'english'), ('Daniel', 'english'), ('Mia', 'english'),
         ('Mehmet', 'turkish'), ('José', 'spanish'), ('Giuseppe', 'italian'), ('Дмитрий', 'russian'),
     ),
+    **{p: _WORLD_POPULAR_SEARCHES for p in WORLD_PRODUCTS},
 }
 
 
@@ -690,8 +702,8 @@ def _distance_dimension_arg() -> str:
 
 
 def _current_product() -> str:
-    for product in ('arabic', 'turkish', 'korean'):
-        if request.path.startswith(PRODUCT_PATHS[product]):
+    for product, path in PRODUCT_PATHS.items():
+        if product != 'index' and request.path.startswith(path):
             return product
     return 'index'
 
@@ -745,12 +757,7 @@ def _product_url(path: str, name: str | None = None) -> str:
 
 def _product_urls(input_name: str = '') -> dict:
     name = input_name.strip() if input_name else None
-    return {
-        'index': _product_url('/', name),
-        'arabic': _product_url('/my-name-in-arabic/', name),
-        'turkish': _product_url('/my-name-in-turkish/', name),
-        'korean': _product_url('/my-name-in-korean/', name),
-    }
+    return {product: _product_url(path, name) for product, path in PRODUCT_PATHS.items()}
 
 
 def _lang_url(lang_code):
@@ -1155,6 +1162,110 @@ def find_similar_korean_names(input_name):
     )
 
 
+def _world_lang_url(product: str, lang_code: str) -> str:
+    args = request.args.to_dict()
+    args['lang'] = lang_code
+    args['input_type'] = DEFAULT_INPUT_TYPE
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
+    args = _strip_defaults(args, lang_code)
+    home = PRODUCT_PATHS[product]
+    path = request.path if request.path.startswith(home + 'find') else home
+    return path + ('?' + urlencode(args) if args else '')
+
+
+def _world_index(product: str):
+    lang = _get_lang()
+    input_name = unquote(request.args.get('name', '') or '')
+    return render_template(
+        'index.html',
+        t=get_world_page_translations(product, lang),
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _world_lang_url(product, code)) for code, (label, _) in LANGUAGES.items()],
+        input_type=_input_type_arg(lang),
+        distance_dimension=_distance_dimension_arg(),
+        gender=request.args.get('gender', ''),
+        script_mismatches=[],
+        mismatch_cta_links=[],
+        product_urls=_product_urls(input_name),
+        finder_path=PRODUCT_PATHS[product] + 'find',
+        share_name_label=product.title(),
+        input_name=input_name,
+    )
+
+
+def _world_find_redirect(product: str):
+    input_name = unquote(request.args.get('name') or '')
+    lang = _get_lang()
+    if not input_name:
+        params = _strip_defaults({'lang': lang, 'input_type': DEFAULT_INPUT_TYPE}, lang)
+        return redirect(url_for(f'{product}_index', **params))
+    input_type = _input_type_arg(lang)
+    params = _strip_defaults({
+        'input_type': _collapse_input_type(input_name, input_type, _hint_arg(lang)),
+        'distance_dimension': _distance_dimension_arg(),
+        'gender': request.args.get('gender') or '',
+        'lang': lang,
+        'hint': request.args.get('hint') if request.args.get('hint') in _AUTO_LATIN_TYPES else '',
+    }, lang)
+    return redirect(url_for(f'find_similar_{product}_names', input_name=input_name, **params))
+
+
+def _world_find(product: str, input_name: str):
+    input_name = unquote(input_name)
+    lang = _get_lang()
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
+    gender = request.args.get('gender') or ''
+    t = get_world_page_translations(product, lang)
+
+    similar_names, input_fields = get_similar_names(
+        input_name, input_type, distance_dimension, gender, db_path=_WORLD_DB_PATHS[product], hint=_hint_arg(lang)
+    )
+
+    script_mismatches = _get_script_mismatches(input_name, input_type)
+    mismatch_cta_links = []
+    for suggested_type in script_mismatches:
+        args = _strip_defaults(request.args.to_dict(), lang)
+        args['input_type'] = suggested_type
+        stripped = _strip_defaults(args, lang)
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
+
+    return render_template(
+        'index.html',
+        input_name=input_name,
+        input_type=input_type,
+        input_fields=input_fields,
+        similar_names=similar_names,
+        distance_dimension=distance_dimension,
+        gender=gender,
+        page_title=f"{t['similar_to'].format(name=input_name)} - {t['page_title']}",
+        meta_description=t['results_meta_description'].format(name=input_name),
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _world_lang_url(product, code)) for code, (label, _) in LANGUAGES.items()],
+        script_mismatches=script_mismatches,
+        detected_input_types=_auto_detected_types(input_name, input_type, lang),
+        mismatch_cta_links=mismatch_cta_links,
+        product_urls=_product_urls(input_name),
+        finder_path=PRODUCT_PATHS[product] + 'find',
+        share_name_label=product.title(),
+        noindex=not similar_names,
+    )
+
+
+for _product in WORLD_PRODUCTS:
+    _home = PRODUCT_PATHS[_product]
+    app.add_url_rule(_home, f'{_product}_index', lambda p=_product: _world_index(p))
+    app.add_url_rule(_home + 'find', f'{_product}_find_redirect', lambda p=_product: _world_find_redirect(p))
+    app.add_url_rule(
+        _home + 'find/<string:input_name>',
+        f'find_similar_{_product}_names',
+        lambda input_name, p=_product: _world_find(p, input_name),
+    )
+
+
 @app.route('/robots.txt')
 def robots_txt():
     body = f"User-agent: *\nAllow: /\n\nSitemap: {_BASE_URL}/sitemap.xml\n"
@@ -1190,6 +1301,9 @@ def _sitemap_paths() -> list[str]:
     for name in distinct(_KOREAN_DB_PATH, 'original_writing'):
         if _detect_input_script(name) == 'korean':
             paths.append(_search_path('index', name, 'korean'))
+    for product in ('chinese', 'hindi'):
+        for name in distinct(_WORLD_DB_PATHS[product], 'name'):
+            paths.append(_search_path(product, name, 'english'))
     return list(dict.fromkeys(paths))
 
 

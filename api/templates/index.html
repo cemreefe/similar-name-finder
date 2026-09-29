@@ -149,7 +149,7 @@
             <ul class="name-list">
                 {% for name, name_gender, name_mp, name_ipa, ipa_alternatives, score, original_writing in similar_names %}
                 <li class="name-item">
-                    <span class="name">{{ name|title }}{% if original_writing %} <span class="original-writing" dir="rtl">{{ original_writing }}</span>{% endif %}</span>
+                    <span class="name">{{ name|title }}{% if original_writing %} <span class="original-writing" dir="auto">{{ original_writing }}</span>{% endif %}</span>
                     <div class="name-item-meta">
                         {% if not gender %}<span class="gender">{{ name_gender }}</span>{% endif %}
                         <span class="result-mp" title="Metaphone"><code>{{ name_mp or '—' }}</code></span>
@@ -173,18 +173,19 @@
 
         </main>
         <aside class="sidebar">
-            {% if finder_path is not defined %}
-            <a href="{{ product_urls.turkish }}" class="ad-banner">
-                <span class="ad-banner-flag">🇹🇷</span>
-                <span class="ad-banner-title">{{ t.ad_banner_turkish_title }}</span>
-                <span class="ad-banner-desc">{{ t.ad_banner_turkish_desc }}</span>
-                <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
-            </a>
-            {% else %}
+            {% if finder_path is defined %}
             <a href="{{ product_urls.index }}" class="ad-banner">
                 <span class="ad-banner-flag">🇬🇧</span>
                 <span class="ad-banner-title">{{ t.ad_banner_english_title }}</span>
                 <span class="ad-banner-desc">{{ t.ad_banner_english_desc }}</span>
+                <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
+            </a>
+            {% endif %}
+            {% if finder_path|default('') != '/my-name-in-turkish/find' %}
+            <a href="{{ product_urls.turkish }}" class="ad-banner">
+                <span class="ad-banner-flag">🇹🇷</span>
+                <span class="ad-banner-title">{{ t.ad_banner_turkish_title }}</span>
+                <span class="ad-banner-desc">{{ t.ad_banner_turkish_desc }}</span>
                 <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
             </a>
             {% endif %}
@@ -200,6 +201,7 @@
                 <span class="ad-banner-desc">{{ t.ad_banner_korean_desc }}</span>
                 <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
             </a>
+            {% include "_world_finders.html" %}
         </aside>
         <article class="content">
         <h2>{{ t.seo_title }}</h2>

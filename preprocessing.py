@@ -7,6 +7,7 @@ from eng_to_ipa import ipa_list
 
 from helpers import metaphone_helper as mhelp
 from helpers.metaphone_helper import hangul_to_metaphone, hangul_to_phonetic_romanization
+from api.index import InputType, NameRepr, _encode, _japanese_to_romaji
 
 KOREAN_TWO_CHAR_SURNAMES = frozenset([
     '남궁', '사공', '제갈', '선우', '독고', '동방', '서문', '황보', '등정', '망절', '무본',
@@ -287,6 +288,103 @@ def create_turkish_database(csv_file, db_file):
     conn.close()
 
 
+_CYRILLIC_TO_LATIN = dict(zip(
+    'абвгдеёжзийклмнопрстуфхцчшщъыьэюя',
+    ['a', 'b', 'v', 'g', 'd', 'e', 'yo', 'zh', 'z', 'i', 'y', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't',
+     'u', 'f', 'kh', 'ts', 'ch', 'sh', 'shch', '', 'y', '', 'e', 'yu', 'ya'],
+))
+
+_WIKIDATA_SCRIPTS = {
+    'japanese': lambda c: '\u3040' <= c <= '\u30ff' or '\u4e00' <= c <= '\u9fff' or c == '々',
+    'chinese': lambda c: '\u4e00' <= c <= '\u9fff' or c in '·-',
+    'hindi': lambda c: '\u0900' <= c <= '\u097f',
+    'russian': lambda c: '\u0400' <= c <= '\u04ff',
+}
+
+_ZH_LABEL_PRIORITY = {'zh-hans': 0, 'zh-cn': 1, 'zh': 2}
+
+
+def _is_latin_name(text: str) -> bool:
+    return bool(text) and all(c.isalpha() and ord(c) < 0x250 or c in "-'" for c in text)
+
+
+def _in_script(product: str, text: str) -> bool:
+    return bool(text) and all(_WIKIDATA_SCRIPTS[product](c) for c in text)
+
+
+def _cyrillic_to_latin(text: str) -> str:
+    return ''.join(_CYRILLIC_TO_LATIN.get(c, c) for c in text.lower())
+
+
+def _wikidata_row(product: str, row: dict) -> tuple[str, str | None, NameRepr] | None:
+    """Return (display name, original writing, encoding) for one Wikidata given-name row."""
+    native = row['native'].strip()
+    en = row['en'].strip()
+    if product == 'spanish':
+        name = native or en
+        if not _is_latin_name(name):
+            return None
+        return name, None, _encode(name, InputType.SPANISH)
+    if product == 'russian':
+        native = native or row['ru'].strip()
+        if not _in_script('russian', native):
+            return None
+        name = en if _is_latin_name(en) else _cyrillic_to_latin(native).title()
+        return name, native, _encode(native, InputType.RUSSIAN)
+    if not _in_script(product, native):
+        return None
+    if product == 'japanese':
+        name = en if _is_latin_name(en) else (_japanese_to_romaji(native) or '').title()
+        if not _is_latin_name(name):
+            return None
+        return name, native, _encode(mhelp.strip_accents(name), InputType.JAPANESE)
+    if not _is_latin_name(en):
+        return None
+    return en, native, _encode(en, InputType.ENGLISH)
+
+
+def create_wikidata_database(product, csv_file, db_file):
+    """Build a name database from a CC0 Wikidata export (scripts/fetch_wikidata_names.py)."""
+    with open(csv_file, encoding='utf-8') as f:
+        rows = list(csv.DictReader(f))
+    if product == 'chinese':
+        rows.sort(key=lambda r: _ZH_LABEL_PRIORITY.get(r['native_lang'], 3))
+        best = {}
+        for r in rows:
+            best.setdefault((r['qid'], r['gender']), r)
+        rows = list(best.values())
+
+    if os.path.exists(db_file):
+        os.remove(db_file)
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE names (
+                        name TEXT,
+                        gender TEXT,
+                        phonetic_representation TEXT,
+                        ipa_transcription TEXT,
+                        ipa_alternatives TEXT,
+                        original_writing TEXT,
+                        PRIMARY KEY (name, gender)
+                    )''')
+    genders = {'male': ('boy',), 'female': ('girl',), 'unisex': ('boy', 'girl')}
+    for row in tqdm(sorted(rows, key=lambda r: int(r['qid'][1:])), desc=f"Processing {product} names"):
+        parsed = _wikidata_row(product, row)
+        if parsed is None:
+            continue
+        name, original, enc = parsed
+        if not (enc.mp or enc.ipa):
+            continue
+        for gender in genders[row['gender']]:
+            cursor.execute(
+                '''INSERT OR IGNORE INTO names (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives, original_writing)
+                   VALUES (?, ?, ?, ?, ?, ?)''',
+                (name, gender, enc.mp, enc.ipa, '', original),
+            )
+    conn.commit()
+    conn.close()
+
+
 if __name__ == "__main__":
     csv_file = "datasets/names.csv"
     db_file = "names_database.db"
@@ -313,3 +411,9 @@ if __name__ == "__main__":
     if os.path.exists(turkish_csv):
         create_turkish_database(turkish_csv, turkish_db)
         print("Turkish database created successfully.")
+
+    for product in ('japanese', 'chinese', 'spanish', 'hindi', 'russian'):
+        wikidata_csv = f"datasets/wikidata_{product}.csv"
+        if os.path.exists(wikidata_csv):
+            create_wikidata_database(product, wikidata_csv, f"{product}_database.db")
+            print(f"{product.title()} database created successfully.")

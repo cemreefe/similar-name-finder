@@ -4,7 +4,10 @@ from urllib.parse import quote
 import pytest
 
 from api.index import resolve_auto_input_types, app, get_similar_names, _detect_input_script, _ARAB_DB_PATH, _TURKISH_DB_PATH
-from api.translations import LANGUAGES, TRANSLATIONS, ARABIC_PAGE_TRANSLATIONS, KOREAN_PAGE_TRANSLATIONS, TURKISH_PAGE_TRANSLATIONS
+from api.translations import (
+    LANGUAGES, TRANSLATIONS, ARABIC_PAGE_TRANSLATIONS, KOREAN_PAGE_TRANSLATIONS, TURKISH_PAGE_TRANSLATIONS,
+    WORLD_LANGUAGE_NAMES, WORLD_PAGE_TEMPLATES, WORLD_PRODUCTS, get_world_page_translations,
+)
 
 
 @pytest.fixture
@@ -221,3 +224,58 @@ def test_turkish_finder_in_sitemap(client):
     locs = re.findall(r"<loc>(.*?)</loc>", client.get("/sitemap.xml").get_data(as_text=True))
     assert "https://namefinder.dutl.uk/my-name-in-turkish/find/John" in locs
     assert "https://namefinder.dutl.uk/find/Ay%C5%9Fe" in locs
+
+
+WORLD_EXPECTATIONS = [
+    ("japanese", "Emma", "えま"),
+    ("chinese", "Michael", "迈克"),
+    ("spanish", "Michael", "Miguel"),
+    ("hindi", "Rahul", "राहुल"),
+    ("russian", "Дмитрий", "Дмитрий"),
+]
+
+
+@pytest.mark.parametrize("product,query,expected", WORLD_EXPECTATIONS)
+def test_world_finder_returns_native_names(client, product, query, expected):
+    html = client.get(f"/my-name-in-{product}/find/{quote(query, safe='')}").get_data(as_text=True)
+    assert expected in html
+    assert '<option value="auto" selected' in html
+    assert f'href="https://namefinder.dutl.uk/my-name-in-{product}/find/{quote(query, safe="")}"' in html
+    assert "noindex" not in html
+
+
+@pytest.mark.parametrize("product", WORLD_PRODUCTS)
+@pytest.mark.parametrize("lang", list(LANGUAGES))
+def test_world_finder_home_renders_in_every_language(client, product, lang):
+    resp = client.get(f"/my-name-in-{product}/?lang={lang}")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert get_world_page_translations(product, lang)["title"] in html
+    assert "{x}" not in html
+
+
+def test_world_templates_cover_every_language():
+    en_keys = set(WORLD_PAGE_TEMPLATES["en"])
+    assert set(WORLD_PAGE_TEMPLATES) == set(LANGUAGES) == set(WORLD_LANGUAGE_NAMES)
+    for lang in LANGUAGES:
+        assert set(WORLD_PAGE_TEMPLATES[lang]) == en_keys, lang
+        assert set(WORLD_LANGUAGE_NAMES[lang]) == set(WORLD_PRODUCTS), lang
+        for product in WORLD_PRODUCTS:
+            assert TRANSLATIONS[lang][f"ad_banner_{product}_title"]
+
+
+def test_world_find_redirect_uses_pretty_url(client):
+    resp = client.get("/my-name-in-japanese/find?name=Yuki")
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/my-name-in-japanese/find/Yuki")
+
+
+def test_world_finders_linked_and_in_sitemap(client):
+    home = client.get("/").get_data(as_text=True)
+    for product in WORLD_PRODUCTS:
+        assert f'href="/my-name-in-{product}' in home
+    locs = set(re.findall(r"<loc>(.*?)</loc>", client.get("/sitemap.xml").get_data(as_text=True)))
+    assert len(locs) < 50000
+    for product in WORLD_PRODUCTS:
+        assert f"https://namefinder.dutl.uk/my-name-in-{product}/find/John" in locs
+    assert "https://namefinder.dutl.uk/my-name-in-chinese/find/Sarah" in locs
