@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="{{ lang }}">
+<html lang="{{ lang }}"{% if lang in rtl_languages %} dir="rtl"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title|default(t.page_title) }}</title>
     <meta name="description" content="{{ meta_description|default(t.meta_description) }}">
-    <link rel="canonical" href="https://namefinder.dutl.uk{{ request.path }}{{ '?' + request.query_string.decode() if request.query_string else '' }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% if noindex or robots_noindex %}<meta name="robots" content="noindex, follow">{% endif %}
     {% for code, label, url in lang_links %}
     <link rel="alternate" hreflang="{{ code }}" href="https://namefinder.dutl.uk{{ url }}">
     {% if code == 'en' %}
@@ -16,7 +17,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="{{ page_title|default(t.page_title) }}">
     <meta property="og:description" content="{{ meta_description|default(t.meta_description) }}">
-    <meta property="og:url" content="https://namefinder.dutl.uk{{ request.path }}">
+    <meta property="og:url" content="{{ canonical_url }}">
     <meta property="og:image" content="{{ meta_image_url|default('https://i.ibb.co/LhHyrtJ1/sam.png') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -29,29 +30,32 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script type="application/ld+json">
-    {
+    <script type="application/ld+json">{{ {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "{{ t.title }}",
-        "description": "{{ t.meta_description }}",
-        "url": "https://namefinder.dutl.uk/my-name-in-korean/",
-        "applicationCategory": "UtilitiesApplication"
-    }
-    </script>
+        "name": t.title,
+        "description": meta_description|default(t.meta_description),
+        "url": product_home_url,
+        "inLanguage": lang,
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any",
+        "isAccessibleForFree": true,
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+        "author": {"@type": "Person", "name": "Cemre Karakas", "url": "https://cemrekarakas.com"}
+    }|tojson }}</script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5BQYC3C8BL"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-5BQYC3C8BL');</script>
 </head>
 <body class="korean-theme">
     <nav class="ui-lang-dropdown" aria-label="Interface language">
         <button type="button" class="ui-lang-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Interface language" id="uiLangTrigger">
-            <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'hi': '🇮🇳', 'es': '🇪🇸', 'pt-BR': '🇧🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(lang, '🌐') }}</span>
+            <span class="ui-lang-flag">{{ ui_flags.get(lang, '🌐') }}</span>
             <span class="ui-lang-chevron">▼</span>
         </button>
         <div class="ui-lang-menu" id="uiLangMenu" role="menu" hidden>
             {% for code, label, url in lang_links %}
             <a href="{{ url }}" role="menuitem" class="ui-lang-option{% if lang == code %} active{% endif %}">
-                <span class="ui-lang-flag">{{ {'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'hi': '🇮🇳', 'es': '🇪🇸', 'pt-BR': '🇧🇷', 'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵'}.get(code, '🌐') }}</span>
+                <span class="ui-lang-flag">{{ ui_flags.get(code, '🌐') }}</span>
                 <span class="ui-lang-label">{{ label }}</span>
             </a>
             {% endfor %}
@@ -81,13 +85,9 @@
                     <div>
                         <label for="input_type">{{ t.input_language }}</label>
                         <select id="input_type" name="input_type">
-                            <option value="english" {% if (input_type|default('english')) == 'english' %}selected{% endif %}>🇬🇧 {{ t.input_english }}</option>
-                            <option value="turkish" {% if (input_type|default('')) == 'turkish' %}selected{% endif %}>🇹🇷 {{ t.input_turkish }}</option>
-                            <option value="chinese" {% if (input_type|default('')) == 'chinese' %}selected{% endif %}>🇨🇳 {{ t.input_chinese }}</option>
-                            <option value="korean" {% if (input_type|default('')) == 'korean' %}selected{% endif %}>🇰🇷 {{ t.input_korean }}</option>
-                            <option value="french" {% if (input_type|default('')) == 'french' %}selected{% endif %}>🇫🇷 {{ t.input_french }}</option>
-                            <option value="filipino" {% if (input_type|default('')) == 'filipino' %}selected{% endif %}>🇵🇭 {{ t.input_filipino }}</option>
-                            <option value="japanese" {% if (input_type|default('')) == 'japanese' %}selected{% endif %}>🇯🇵 {{ t.input_japanese }}</option>
+                            {% for value, flag in input_type_options %}
+                            <option value="{{ value }}" {% if (input_type|default('english')) == value %}selected{% endif %}>{{ flag }} {{ t['input_' + value] }}</option>
+                            {% endfor %}
                             <option value="ipa" data-advanced {% if (input_type|default('')) == 'ipa' %}selected{% endif %}>{{ t.get('input_ipa', 'IPA') }}</option>
                             <option value="mp" data-advanced {% if (input_type|default('')) == 'mp' %}selected{% endif %}>{{ t.get('input_mp', 'Metaphone') }}</option>
                         </select>
@@ -122,6 +122,7 @@
         {% if input_fields and similar_names %}
         <section class="results" aria-labelledby="results-heading">
             <h2 id="results-heading">{{ t.similar_to.format(name=input_name|capitalize) }}</h2>
+            <p class="results-summary">{{ t.results_summary.format(name=input_name, names=(similar_names[:5]|map(attribute=0)|map('title')|join(', '))) }}</p>
             {% if mismatch_cta_links %}
             <p class="script-mismatch">
                 {% if mismatch_cta_links|length == 1 %}
@@ -157,6 +158,15 @@
         </section>
         {% endif %}
 
+        <nav class="popular-searches" aria-labelledby="popular-heading">
+            <h2 id="popular-heading">{{ t.popular_title }}</h2>
+            <ul>
+                {% for label, url in popular_links %}
+                <li><a href="{{ url }}">{{ label }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+
         </main>
         <aside class="sidebar">
             <a href="{{ product_urls.index }}" class="ad-banner">
@@ -189,6 +199,7 @@
         <ul>
             <li>{{ t.seo_english }}</li>
             <li>{{ t.seo_turkish }}</li>
+            <li>{{ t.seo_more_languages }}</li>
             <li>{{ t.seo_ipa }}</li>
             <li>{{ t.seo_metaphone }}</li>
         </ul>
