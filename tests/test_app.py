@@ -5,7 +5,15 @@ import pytest
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.getcwd())
 
-from api.index import app, get_similar_names, _ARAB_DB_PATH, _repr_order, DistanceDimension, _mp_distance
+from api.index import (
+    app,
+    get_similar_names,
+    _ARAB_DB_PATH,
+    _TURKISH_DB_PATH,
+    _repr_order,
+    DistanceDimension,
+    _mp_distance,
+)
 import helpers.metaphone_helper as mhelp
 
 
@@ -104,6 +112,43 @@ class TestFindRoute:
         assert b"Chinese" in response.data
         assert b"Japanese" in response.data
         assert b"script-mismatch" in response.data
+
+
+class TestTurkishNameFinder:
+    def test_turkish_finder_is_linked_from_home(self, client):
+        response = client.get("/")
+        assert response.status_code == 200
+        assert b"/my-name-in-turkish" in response.data
+
+    def test_turkish_finder_returns_turkish_names(self, client):
+        response = client.get(
+            "/my-name-in-turkish/find/Ay%C5%9Fe?input_type=turkish&distance_dimension=sound&gender=female"
+        )
+        assert response.status_code == 200
+        assert "Similar Turkish Names Finder" in response.data.decode("utf-8")
+        assert "Ayşe" in response.data.decode("utf-8")
+
+    def test_turkish_exact_match_and_gender_filters(self):
+        female, fields = get_similar_names(
+            "Ayşe", "turkish", "sound", "female", db_path=_TURKISH_DB_PATH
+        )
+        assert fields.ipa == "ajʃe"
+        assert fields.mp == "AX"
+        assert female[0][0] == "Ayşe"
+        assert all(result[1] == "female" for result in female)
+
+        male, _ = get_similar_names(
+            "Cemre", "turkish", "sound", "male", db_path=_TURKISH_DB_PATH
+        )
+        female, _ = get_similar_names(
+            "Cemre", "turkish", "sound", "female", db_path=_TURKISH_DB_PATH
+        )
+        assert male[0][0] == "Cemre"
+        assert female[0][0] == "Cemre"
+
+    def test_turkish_uppercase_i_is_encoded_correctly(self):
+        assert mhelp.turkish_to_ipa("IŞIL") == "ɯʃɯl"
+        assert mhelp.turkish_to_ipa("İLKER") == "ilkeɾ"
 
 
 class TestGetSimilarNames:

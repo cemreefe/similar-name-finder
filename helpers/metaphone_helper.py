@@ -380,7 +380,10 @@ def hangul_to_metaphone(text: str):
 
 def turkish_to_ipa(text: str) -> str:
     """Turkish orthography to IPA."""
-    text = text.lower().strip()
+    # Python's Unicode lowercasing maps İ to ``i`` plus a combining dot and
+    # maps I to i. Turkish distinguishes both letters, so normalize them
+    # before lowercasing.
+    text = text.translate(str.maketrans({'I': 'ı', 'İ': 'i'})).lower().strip()
     result = []
     soft_vowels = 'eiöü'
     for i, c in enumerate(text):

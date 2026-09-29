@@ -3,8 +3,8 @@ from urllib.parse import quote
 
 import pytest
 
-from api.index import resolve_auto_input_types, app, get_similar_names, _detect_input_script, _ARAB_DB_PATH
-from api.translations import LANGUAGES, TRANSLATIONS, ARABIC_PAGE_TRANSLATIONS, KOREAN_PAGE_TRANSLATIONS
+from api.index import resolve_auto_input_types, app, get_similar_names, _detect_input_script, _ARAB_DB_PATH, _TURKISH_DB_PATH
+from api.translations import LANGUAGES, TRANSLATIONS, ARABIC_PAGE_TRANSLATIONS, KOREAN_PAGE_TRANSLATIONS, TURKISH_PAGE_TRANSLATIONS
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def test_new_ui_languages_are_complete(lang):
     assert lang in KOREAN_PAGE_TRANSLATIONS
 
 
-@pytest.mark.parametrize("path", ["/", "/my-name-in-arabic/", "/my-name-in-korean/"])
+@pytest.mark.parametrize("path", ["/", "/my-name-in-arabic/", "/my-name-in-turkish/", "/my-name-in-korean/"])
 @pytest.mark.parametrize("lang", list(LANGUAGES))
 def test_every_page_renders_in_every_language(client, path, lang):
     response = client.get(f"{path}?lang={lang}")
@@ -196,3 +196,28 @@ def test_structured_data_is_valid_json(client):
 def test_cache_headers(client):
     response = client.get("/find/John")
     assert "s-maxage" in response.headers["Cache-Control"]
+
+
+@pytest.mark.parametrize("lang", list(LANGUAGES))
+def test_turkish_page_is_translated(lang):
+    assert set(TURKISH_PAGE_TRANSLATIONS[lang]) == set(TURKISH_PAGE_TRANSLATIONS["en"])
+    assert TRANSLATIONS[lang]["ad_banner_turkish_title"]
+
+
+def test_turkish_finder_auto_detects_and_is_indexed(client):
+    html = client.get("/my-name-in-turkish/find/Ay%C5%9Fe").get_data(as_text=True)
+    assert "Ayşe" in html
+    assert '<option value="auto" selected' in html
+    assert 'href="https://namefinder.dutl.uk/my-name-in-turkish/find/Ay%C5%9Fe"' in html
+    assert "noindex" not in html
+
+
+def test_english_name_finds_turkish_names():
+    results, _ = get_similar_names("Jennifer", "auto", "sound", "", db_path=_TURKISH_DB_PATH)
+    assert len(results) == 10
+
+
+def test_turkish_finder_in_sitemap(client):
+    locs = re.findall(r"<loc>(.*?)</loc>", client.get("/sitemap.xml").get_data(as_text=True))
+    assert "https://namefinder.dutl.uk/my-name-in-turkish/find/John" in locs
+    assert "https://namefinder.dutl.uk/find/Ay%C5%9Fe" in locs

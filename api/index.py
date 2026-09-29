@@ -3,9 +3,9 @@ from enum import Enum
 from typing import assert_never
 from flask import Flask, Response, render_template, request, redirect, url_for
 try:
-    from api.translations import get_translations, get_arabic_page_translations, get_korean_page_translations, LANGUAGES, RTL_LANGUAGES
+    from api.translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, LANGUAGES, RTL_LANGUAGES
 except ImportError:
-    from translations import get_translations, get_arabic_page_translations, get_korean_page_translations, LANGUAGES, RTL_LANGUAGES
+    from translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, LANGUAGES, RTL_LANGUAGES
 import sqlite3
 from metaphone import doublemetaphone
 import helpers.metaphone_helper as mhelp
@@ -19,6 +19,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _BASE_URL = 'https://namefinder.dutl.uk'
 _DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'names_database.db')
 _ARAB_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'arabnames_database.db')
+_TURKISH_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'turkish_database.db')
 _KOREAN_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'korean_database.db')
 import re
 import unicodedata
@@ -590,6 +591,7 @@ _VALID_DISTANCE_DIMENSIONS = ('sound', 'spelling', 'mp', 'ipa', 'semi')
 PRODUCT_PATHS = {
     'index': '/',
     'arabic': '/my-name-in-arabic/',
+    'turkish': '/my-name-in-turkish/',
     'korean': '/my-name-in-korean/',
 }
 
@@ -604,6 +606,11 @@ POPULAR_SEARCHES = {
         ('John', 'english'), ('Michael', 'english'), ('Sarah', 'english'), ('Emily', 'english'),
         ('David', 'english'), ('Jessica', 'english'), ('Daniel', 'english'), ('Sophia', 'english'),
         ('Mehmet', 'turkish'), ('Ayşe', 'turkish'), ('José', 'spanish'), ('Дмитрий', 'russian'),
+    ),
+    'turkish': (
+        ('John', 'english'), ('Michael', 'english'), ('Sarah', 'english'), ('Emily', 'english'),
+        ('David', 'english'), ('Maria', 'english'), ('Daniel', 'english'), ('Sophia', 'english'),
+        ('José', 'spanish'), ('Jürgen', 'german'), ('Дмитрий', 'russian'), ('محمد', 'arabic'),
     ),
     'korean': (
         ('John', 'english'), ('Emma', 'english'), ('Michael', 'english'), ('Olivia', 'english'),
@@ -683,7 +690,7 @@ def _distance_dimension_arg() -> str:
 
 
 def _current_product() -> str:
-    for product in ('arabic', 'korean'):
+    for product in ('arabic', 'turkish', 'korean'):
         if request.path.startswith(PRODUCT_PATHS[product]):
             return product
     return 'index'
@@ -741,6 +748,7 @@ def _product_urls(input_name: str = '') -> dict:
     return {
         'index': _product_url('/', name),
         'arabic': _product_url('/my-name-in-arabic/', name),
+        'turkish': _product_url('/my-name-in-turkish/', name),
         'korean': _product_url('/my-name-in-korean/', name),
     }
 
@@ -952,6 +960,109 @@ def find_similar_arabic_names(input_name):
     )
 
 
+def _tr_lang_url(lang_code):
+    args = request.args.to_dict()
+    args['lang'] = lang_code
+    args['input_type'] = DEFAULT_INPUT_TYPE
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
+    args = _strip_defaults(args, lang_code)
+    path = request.path if request.path.startswith('/my-name-in-turkish/find') else '/my-name-in-turkish/'
+    return path + ('?' + urlencode(args) if args else '')
+
+
+@app.route('/my-name-in-turkish/')
+def turkish_index():
+    lang = _get_lang()
+    t = get_turkish_page_translations(lang)
+    input_name = unquote(request.args.get('name', '') or '')
+    return render_template(
+        'index.html',
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _tr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
+        input_type=_input_type_arg(lang),
+        distance_dimension=_distance_dimension_arg(),
+        gender=request.args.get('gender', ''),
+        script_mismatches=[],
+        mismatch_cta_links=[],
+        product_urls=_product_urls(input_name),
+        finder_path='/my-name-in-turkish/find',
+        share_name_label='Turkish',
+        input_name=input_name,
+    )
+
+
+@app.route('/my-name-in-turkish/find', methods=['GET'])
+def turkish_find_redirect():
+    input_name = unquote(request.args.get('name') or '')
+    if not input_name:
+        lang = request.args.get('lang', 'en')
+        params = _strip_defaults({'lang': lang, 'input_type': DEFAULT_INPUT_TYPE}, lang)
+        return redirect(url_for('turkish_index', **params))
+    lang = _get_lang()
+    input_type = _input_type_arg(lang)
+    params = _strip_defaults({
+        'input_type': _collapse_input_type(input_name, input_type, _hint_arg(lang)),
+        'distance_dimension': _distance_dimension_arg(),
+        'gender': request.args.get('gender') or '',
+        'lang': lang,
+        'hint': request.args.get('hint') if request.args.get('hint') in _AUTO_LATIN_TYPES else '',
+    }, lang)
+    return redirect(url_for('find_similar_turkish_names', input_name=input_name, **params))
+
+
+@app.route('/my-name-in-turkish/find/<string:input_name>', methods=['GET'])
+def find_similar_turkish_names(input_name):
+    input_name = unquote(input_name)
+    lang = _get_lang()
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
+    gender = request.args.get('gender') or ''
+    t = get_turkish_page_translations(lang)
+
+    similar_names, input_fields = get_similar_names(
+        input_name, input_type, distance_dimension, gender, db_path=_TURKISH_DB_PATH, hint=_hint_arg(lang)
+    )
+
+    script_mismatches = _get_script_mismatches(input_name, input_type)
+    mismatch_cta_links = []
+    for suggested_type in script_mismatches:
+        args = _strip_defaults(request.args.to_dict(), lang)
+        args['input_type'] = suggested_type
+        stripped = _strip_defaults(args, lang)
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
+
+    page_title = t['page_title']
+    meta_description = t['meta_description']
+    if input_name:
+        page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
+        meta_description = t.get('results_meta_description', t['meta_description']).format(name=input_name)
+
+    return render_template(
+        'index.html',
+        input_name=input_name,
+        input_type=input_type,
+        input_fields=input_fields,
+        similar_names=similar_names,
+        distance_dimension=distance_dimension,
+        gender=gender,
+        page_title=page_title,
+        meta_description=meta_description,
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _tr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
+        script_mismatches=script_mismatches,
+        detected_input_types=_auto_detected_types(input_name, input_type, lang),
+        mismatch_cta_links=mismatch_cta_links,
+        product_urls=_product_urls(input_name),
+        finder_path='/my-name-in-turkish/find',
+        share_name_label='Turkish',
+        noindex=not similar_names,
+    )
+
+
 @app.route('/my-name-in-korean/')
 def korean_index():
     lang = _get_lang()
@@ -1071,8 +1182,11 @@ def _sitemap_paths() -> list[str]:
     for name in distinct(_DB_PATH, 'name'):
         paths.append(_search_path('arabic', name.title(), 'english'))
         paths.append(_search_path('korean', name.title(), 'english'))
+        paths.append(_search_path('turkish', name.title(), 'english'))
     for name in distinct(_ARAB_DB_PATH, 'original_writing'):
         paths.append(_search_path('index', name, 'arabic'))
+    for name in distinct(_TURKISH_DB_PATH, 'name'):
+        paths.append(_search_path('index', name, 'turkish'))
     for name in distinct(_KOREAN_DB_PATH, 'original_writing'):
         if _detect_input_script(name) == 'korean':
             paths.append(_search_path('index', name, 'korean'))
