@@ -3,7 +3,7 @@ from urllib.parse import quote
 
 import pytest
 
-from api.index import app, get_similar_names, _detect_input_script, _ARAB_DB_PATH
+from api.index import resolve_auto_input_types, app, get_similar_names, _detect_input_script, _ARAB_DB_PATH
 from api.translations import LANGUAGES, TRANSLATIONS, ARABIC_PAGE_TRANSLATIONS, KOREAN_PAGE_TRANSLATIONS
 
 
@@ -59,7 +59,7 @@ def test_detect_new_scripts(text, script):
 
 
 def test_script_mismatch_suggests_russian(client):
-    html = client.get("/find/" + quote("Дмитрий")).get_data(as_text=True)
+    html = client.get("/find/" + quote("Дмитрий") + "?input_type=english").get_data(as_text=True)
     assert "input_type=russian" in html
 
 
@@ -89,9 +89,53 @@ def test_new_input_options_rendered(client):
         assert f'<option value="{value}"' in html
 
 
-def test_german_ui_defaults_to_german_input(client):
+def test_default_input_is_auto(client):
     html = client.get("/?lang=de").get_data(as_text=True)
-    assert '<option value="german" selected' in html
+    assert '<option value="auto" selected' in html
+
+
+@pytest.mark.parametrize("name,hint,expected", [
+    ("Дмитрий", None, ["russian"]),
+    ("محمد", None, ["arabic"]),
+    ("민준", None, ["korean"]),
+    ("Ayşe", None, ["turkish"]),
+    ("Muñoz", None, ["spanish"]),
+    ("João", None, ["portuguese"]),
+    ("Günter", "turkish", ["turkish", "german"]),
+    ("Mehmet", "turkish", ["turkish", "english"]),
+    ("Mehmet", None, ["english"]),
+    ("Mehmet", "korean", ["english"]),
+])
+def test_resolve_auto_input_types(name, hint, expected):
+    assert resolve_auto_input_types(name, hint) == expected
+
+
+def test_auto_uses_script_without_mismatch_notice(client):
+    html = client.get("/find/%D0%94%D0%BC%D0%B8%D1%82%D1%80%D0%B8%D0%B9").get_data(as_text=True)
+    assert "script-mismatch" not in html
+    assert "Searched as Russian" in html
+    auto, _ = get_similar_names("Дмитрий", "auto", "sound", "")
+    explicit, _ = get_similar_names("Дмитрий", "russian", "sound", "")
+    assert [r[0] for r in auto] == [r[0] for r in explicit]
+
+
+def test_auto_arabic_script_on_arabic_page(client):
+    html = client.get("/my-name-in-arabic/find/%D9%85%D8%AD%D9%85%D8%AF").get_data(as_text=True)
+    assert "muhammad" in html.lower()
+
+
+def test_auto_merges_hint_and_english():
+    results, _ = get_similar_names("Mehmet", "auto", "sound", "", hint="turkish")
+    turkish, _ = get_similar_names("Mehmet", "turkish", "sound", "")
+    assert results[0][5] <= turkish[0][5]
+
+
+def test_hint_forwarded_by_redirect_and_not_canonical(client):
+    response = client.get("/find?name=Mehmet&hint=turkish")
+    assert response.headers["Location"] == "/find/Mehmet?hint=turkish"
+    html = client.get("/find/Mehmet?hint=turkish").get_data(as_text=True)
+    assert '<link rel="canonical" href="https://namefinder.dutl.uk/find/Mehmet">' in html
+    assert "Searched as Turkish + English" in html
 
 
 def test_invalid_query_params_do_not_crash(client):

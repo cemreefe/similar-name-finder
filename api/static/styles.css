@@ -1017,3 +1017,9 @@ body.korean-theme .advanced-toggle.on {
 .popular-searches a:hover {
     opacity: 1;
 }
+
+.detected-input {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    opacity: 0.7;
+}

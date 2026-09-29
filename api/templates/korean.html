@@ -123,6 +123,10 @@
         <section class="results" aria-labelledby="results-heading">
             <h2 id="results-heading">{{ t.similar_to.format(name=input_name|capitalize) }}</h2>
             <p class="results-summary">{{ t.results_summary.format(name=input_name, names=(similar_names[:5]|map(attribute=0)|map('title')|join(', '))) }}</p>
+            {% if detected_input_types %}
+            {% set detected = namespace(labels=[]) %}{% for it in detected_input_types %}{% set detected.labels = detected.labels + [t.get('input_' + it, it|title)] %}{% endfor %}
+            <p class="detected-input">{{ t.detected_as.format(langs=detected.labels|join(' + ')) }}</p>
+            {% endif %}
             {% if mismatch_cta_links %}
             <p class="script-mismatch">
                 {% if mismatch_cta_links|length == 1 %}
@@ -281,6 +285,25 @@
             var el = form.querySelector('[name="' + name + '"]');
             if (el && el.value === defaults[name]) el.disabled = true;
         });
+        var inputSelect = form.querySelector('[name="input_type"]');
+        if (inputSelect && inputSelect.value === 'auto') {
+            var hintMap = {tr: 'turkish', es: 'spanish', pt: 'portuguese', de: 'german', it: 'italian', fr: 'french', fil: 'filipino', tl: 'filipino', ru: 'russian'};
+            var uiHint = '{{ lang_input_hint|default("english") }}';
+            var browserLangs = navigator.languages || [navigator.language || ''];
+            for (var i = 0; i < browserLangs.length; i++) {
+                var hint = hintMap[(browserLangs[i] || '').toLowerCase().split('-')[0]];
+                if (hint) {
+                    if (hint !== uiHint) {
+                        var hintInput = document.createElement('input');
+                        hintInput.type = 'hidden';
+                        hintInput.name = 'hint';
+                        hintInput.value = hint;
+                        form.appendChild(hintInput);
+                    }
+                    break;
+                }
+            }
+        }
     });
 
     (function() {

@@ -54,7 +54,7 @@ class TestFindRedirect:
     def test_pt_br_lang_preserved_and_defaults_stripped(self, client):
         response = client.get("/find?name=John&lang=pt-BR&input_type=english&distance_dimension=sound&gender=")
         assert response.status_code == 302
-        assert response.headers["Location"] == "/find/John?lang=pt-BR"
+        assert response.headers["Location"] == "/find/John?input_type=english&lang=pt-BR"
 
 
 class TestSemiPhonetic:
