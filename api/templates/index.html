@@ -232,7 +232,8 @@
         if (e.key === 'Enter') {
             e.preventDefault();
             updateFormAction();
-            document.getElementById('nameForm').submit();
+            var nameForm = document.getElementById('nameForm');
+            if (nameForm.requestSubmit) nameForm.requestSubmit(); else nameForm.submit();
         }
     });
     updateFormAction();
@@ -285,6 +286,8 @@
             var el = form.querySelector('[name="' + name + '"]');
             if (el && el.value === defaults[name]) el.disabled = true;
         });
+        var nameInput = form.querySelector('[name="name"]');
+        if (nameInput && /\/find\/./.test(form.getAttribute('action') || '')) nameInput.disabled = true;
         var inputSelect = form.querySelector('[name="input_type"]');
         if (inputSelect && inputSelect.value === 'auto') {
             var hintMap = {tr: 'turkish', es: 'spanish', pt: 'portuguese', de: 'german', it: 'italian', fr: 'french', fil: 'filipino', tl: 'filipino', ru: 'russian'};
@@ -304,6 +307,12 @@
                 }
             }
         }
+    });
+
+    window.addEventListener('pageshow', function() {
+        var form = document.getElementById('nameForm');
+        Array.prototype.forEach.call(form.elements, function(el) { el.disabled = false; });
+        Array.prototype.forEach.call(form.querySelectorAll('input[name="hint"]'), function(el) { el.remove(); });
     });
 
     (function() {
