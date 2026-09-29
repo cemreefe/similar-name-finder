@@ -1,9 +1,10 @@
 """
 Translations use a shared base + product override structure:
 - TRANSLATIONS: full content for the English product (main page)
-- ARABIC_PAGE_TRANSLATIONS / KOREAN_PAGE_TRANSLATIONS: product-specific overrides
+- ARABIC_PAGE_TRANSLATIONS / TURKISH_PAGE_TRANSLATIONS / KOREAN_PAGE_TRANSLATIONS:
+  product-specific overrides
   (title, tagline, seo_*, page_title, meta_description, chatgpt_prompt)
-- get_arabic_page_translations(lang) = {**TRANSLATIONS[lang], **ARABIC_PAGE[lang]}
+- get_*_page_translations(lang) = {**TRANSLATIONS[lang], **PRODUCT_PAGE[lang]}
   Shared strings (seo_how, seo_english, input_*, etc.) come from base; product-specific
   strings are overridden so Arabic/Korean pages show correct SEO in every language.
 """
@@ -88,6 +89,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'Find similar names from our Arabic database',
         'ad_banner_korean_title': 'Find your Korean name!',
         'ad_banner_korean_desc': 'Find similar names from our K-pop database',
+        'ad_banner_turkish_title': 'Find your Turkish name!',
+        'ad_banner_turkish_desc': 'Find similar names from our Turkish database',
         'ad_banner_cta': 'Try it →',
         'chatgpt_prompt': 'What is the meaning and origin of the English name {name}, and who are some notable people with this name?',
     },
@@ -158,6 +161,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'Arapça veritabanımızdan benzer isimler bulun',
         'ad_banner_korean_title': 'Korece isminizi bulun!',
         'ad_banner_korean_desc': 'K-pop veritabanımızdan benzer isimler bulun',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': 'Dene →',
         'chatgpt_prompt': 'İngilizce isim {name}ın anlamı ve kökeni nedir, bu isimle bilinen ünlü kişiler kimlerdir?',
     },
@@ -227,6 +232,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': '从我们的阿拉伯名字库查找相似名字',
         'ad_banner_korean_title': '找到您的韩语名字！',
         'ad_banner_korean_desc': '从我们的K-pop数据库查找相似名字',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': '试试 →',
         'chatgpt_prompt': '英文名字{name}的含义和起源是什么？有哪些知名人物叫这个名字？',
     },
@@ -296,6 +303,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': '아랍어 데이터베이스에서 비슷한 이름 찾기',
         'ad_banner_korean_title': '한국어 이름 찾기!',
         'ad_banner_korean_desc': 'K-pop 데이터베이스에서 비슷한 이름 찾기',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': '시도하기 →',
         'chatgpt_prompt': '영어 이름 {name}의 의미와 유래는 무엇이며, 이 이름을 가진 유명인은 누구인가요?',
     },
@@ -365,6 +374,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'Trouvez des noms similaires dans notre base arabe',
         'ad_banner_korean_title': 'Trouvez votre nom en coréen !',
         'ad_banner_korean_desc': 'Trouvez des noms similaires dans notre base K-pop',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': 'Essayer →',
         'chatgpt_prompt': "Quel est le sens et l'origine du nom anglais {name}, et quelles sont les personnalités notables portant ce nom ?",
     },
@@ -434,6 +445,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'Maghanap ng katulad na pangalan mula sa aming database ng Arabe',
         'ad_banner_korean_title': 'Hanapin ang iyong pangalang Koreano!',
         'ad_banner_korean_desc': 'Maghanap ng katulad na pangalan mula sa aming database ng K-pop',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': 'Subukan →',
         'chatgpt_prompt': 'Ano ang kahulugan at pinagmulan ng pangalang Ingles na {name}, at sino ang mga kilalang tao na may ganitong pangalan?',
     },
@@ -503,6 +516,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'アラビア語データベースから似た名前を検索',
         'ad_banner_korean_title': '韓国語の名前を見つけよう！',
         'ad_banner_korean_desc': 'K-popデータベースから似た名前を検索',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': '試す →',
         'chatgpt_prompt': '英語の名前{name}の意味と由来は何ですか？この名前の有名人は誰ですか？',
     },
@@ -572,6 +587,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'Busca nombres similares en nuestra base de datos en árabe',
         'ad_banner_korean_title': '¡Encuentra tu nombre en coreano!',
         'ad_banner_korean_desc': 'Busca nombres similares en nuestra base de datos de K‑pop',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': 'Probar →',
         'chatgpt_prompt': '¿Cuál es el significado y el origen del nombre en inglés {name}, y qué personas conocidas tienen este nombre?',
     },
@@ -641,6 +658,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'Ache nomes parecidos no nosso banco em árabe',
         'ad_banner_korean_title': 'Encontre seu nome em coreano!',
         'ad_banner_korean_desc': 'Ache nomes parecidos no nosso banco de K‑pop',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': 'Testar →',
         'chatgpt_prompt': 'Qual é o significado e a origem do nome em inglês {name}, e quem são algumas pessoas conhecidas com esse nome?',
     },
@@ -710,6 +729,8 @@ TRANSLATIONS = {
         'ad_banner_arabic_desc': 'हमारे अरबी डेटाबेस से समान नाम खोजें',
         'ad_banner_korean_title': 'अपना कोरियाई नाम खोजें!',
         'ad_banner_korean_desc': 'हमारे K‑pop डेटाबेस से समान नाम खोजें',
+        'ad_banner_turkish_title': 'Türkçe isminizi bulun!',
+        'ad_banner_turkish_desc': 'Türkçe veritabanımızdan benzer isimler bulun',
         'ad_banner_cta': 'आजमाएँ →',
         'chatgpt_prompt': 'अंग्रेज़ी नाम {name} का अर्थ और उत्पत्ति क्या है, और इस नाम के कुछ प्रसिद्ध लोग कौन हैं?',
     },
@@ -930,6 +951,43 @@ ARABIC_PAGE_TRANSLATIONS = {
         'seo_why': '名前と発音やスペルが似たアラビア語の名前を探せます。',
         'seo_conclusion': '数秒で似たアラビア語の名前を見つけられます。',
         'chatgpt_prompt': 'アラビア語の名前{name}の意味と由来は何ですか？この名前の有名人は誰ですか？',
+    },
+}
+
+TURKISH_PAGE_TRANSLATIONS = {
+    'en': {
+        'title': 'Similar Turkish Names Finder',
+        'tagline': 'Find similar Turkish names',
+        'page_title': 'Find Similar Turkish Names – Turkish Name Finder',
+        'meta_description': 'Find Turkish names that sound or look similar to any name. Search more than 13,000 Turkish names, with gender filters and Turkish spelling support.',
+        'results_meta_description': 'What does {name} sound like in Turkish? Discover Turkish names matched by pronunciation or spelling.',
+        'seo_title': 'Find Similar Turkish Names',
+        'seo_intro': 'Enter any name to discover Turkish names with a similar sound or spelling. Our Turkish name database preserves Turkish characters and includes male, female, and unisex names.',
+        'seo_find_title': 'How it works',
+        'seo_find': 'Choose the language and spelling of your input, then we compare it with thousands of Turkish given names using phonetic and spelling similarity.',
+        'seo_phonetic_title': 'Turkish phonetic matching',
+        'seo_phonetic': 'Turkish letters such as ç, ğ, ı, ö, ş, and ü are transcribed before matching, so search results reflect how Turkish names are pronounced.',
+        'seo_how_end': 'Choose an input type and find similar Turkish names in seconds.',
+        'seo_why': 'Explore Turkish names that are close to your name in sound or spelling.',
+        'seo_conclusion': 'Start now to find Turkish names similar to yours.',
+        'chatgpt_prompt': 'What is the meaning and origin of the Turkish name {name}, and who are some notable people with this name?',
+    },
+    'tr': {
+        'title': 'Benzer Türkçe İsim Bulucu',
+        'tagline': 'Benzer Türkçe isimleri bulun',
+        'page_title': 'Benzer Türkçe İsimler Bul',
+        'meta_description': 'Herhangi bir isme ses veya yazım olarak benzeyen Türkçe isimleri bulun. Türkçe karakter desteği ve cinsiyet filtresiyle 13 binden fazla isimde arayın.',
+        'results_meta_description': '{name} Türkçe’de nasıl duyulur? Ses veya yazım bakımından en benzer Türkçe isimleri keşfedin.',
+        'seo_title': 'Benzer Türkçe İsimleri Bulun',
+        'seo_intro': 'İsminize ses veya yazım olarak benzeyen Türkçe isimleri keşfedin. Veritabanımız Türkçe karakterleri korur; erkek, kadın ve unisex isimler içerir.',
+        'seo_find_title': 'Nasıl çalışır',
+        'seo_find': 'Giriş dilinizi ve yazımınızı seçin. Ardından ismi fonetik ve yazım benzerliğine göre binlerce Türkçe adla karşılaştırıyoruz.',
+        'seo_phonetic_title': 'Türkçe fonetik eşleştirme',
+        'seo_phonetic': 'ç, ğ, ı, ö, ş ve ü gibi Türkçe harfler eşleştirmeden önce sesletime çevrilir; böylece sonuçlar ismin Türkçe telaffuzunu yansıtır.',
+        'seo_how_end': 'Giriş türünü seçin ve saniyeler içinde benzer Türkçe isimleri bulun.',
+        'seo_why': 'İsminize ses veya yazım bakımından yakın Türkçe isimleri keşfedin.',
+        'seo_conclusion': 'Hemen başlayın ve isminize benzeyen Türkçe isimleri bulun.',
+        'chatgpt_prompt': 'Türkçe isim {name}ın anlamı ve kökeni nedir, bu isimle bilinen ünlü kişiler kimlerdir?',
     },
 }
 
@@ -1162,9 +1220,13 @@ def get_arabic_page_translations(lang: str) -> dict:
     return {**base, **page}
 
 
+def get_turkish_page_translations(lang: str) -> dict:
+    base = TRANSLATIONS.get(lang, TRANSLATIONS['en'])
+    page = TURKISH_PAGE_TRANSLATIONS.get(lang, TURKISH_PAGE_TRANSLATIONS['en'])
+    return {**base, **page}
+
+
 def get_korean_page_translations(lang: str) -> dict:
     base = TRANSLATIONS.get(lang, TRANSLATIONS['en'])
     page = KOREAN_PAGE_TRANSLATIONS.get(lang, KOREAN_PAGE_TRANSLATIONS['en'])
     return {**base, **page}
-
-

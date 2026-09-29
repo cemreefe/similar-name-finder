@@ -5,6 +5,7 @@ from tqdm import tqdm
 from metaphone import doublemetaphone
 from eng_to_ipa import ipa_list
 
+from helpers import metaphone_helper as mhelp
 from helpers.metaphone_helper import hangul_to_metaphone, hangul_to_phonetic_romanization
 
 KOREAN_TWO_CHAR_SURNAMES = frozenset([
@@ -235,11 +236,63 @@ def create_korean_database(csv_file, db_file):
     conn.close()
 
 
+def _turkish_title(name: str) -> str:
+    """Title-case Turkish names without turning initial i into an ASCII I."""
+    def title_word(word: str) -> str:
+        if not word:
+            return word
+        first = {'i': 'İ', 'ı': 'I'}.get(word[0], word[0].upper())
+        return first + word[1:]
+
+    return ' '.join(title_word(word) for word in name.strip().split())
+
+
+def create_turkish_database(csv_file, db_file):
+    """Build a Turkish-name database from the MIT-licensed source CSV."""
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS names (
+                        name TEXT,
+                        gender TEXT,
+                        phonetic_representation TEXT,
+                        ipa_transcription TEXT,
+                        ipa_alternatives TEXT,
+                        PRIMARY KEY (name, gender)
+                    )''')
+    cursor.execute('DELETE FROM names')
+
+    with open(csv_file, 'r', encoding='utf-8-sig', newline='') as file:
+        reader = csv.DictReader(file)
+        rows = list(reader)
+
+    gender_map = {'E': ('boy',), 'K': ('girl',), 'U': ('boy', 'girl')}
+    for row in tqdm(rows, desc='Processing Turkish CSV'):
+        raw_name = (row.get('name') or '').strip()
+        genders = gender_map.get((row.get('sex') or '').strip().upper())
+        if not raw_name or not genders:
+            continue
+
+        name = _turkish_title(raw_name)
+        ipa_transcription = mhelp.turkish_to_ipa(name)
+        phonetic_repr = mhelp.map_ipa_to_metaphone(ipa_transcription).upper().replace('B', 'P')
+        for gender in genders:
+            cursor.execute(
+                '''INSERT OR IGNORE INTO names
+                   (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives)
+                   VALUES (?, ?, ?, ?, ?)''',
+                (name, gender, phonetic_repr, ipa_transcription, None),
+            )
+
+    conn.commit()
+    conn.close()
+
+
 if __name__ == "__main__":
-    csv_file = "names.csv"
+    csv_file = "datasets/names.csv"
     db_file = "names_database.db"
-    create_database(csv_file, db_file)
-    print("Database created successfully.")
+    if os.path.exists(csv_file):
+        create_database(csv_file, db_file)
+        print("Database created successfully.")
 
     arab_csv = "datasets/arabnames.csv"
     arabic_writings_csv = "datasets/arabic_names.csv"
@@ -254,3 +307,9 @@ if __name__ == "__main__":
     if os.path.exists(korean_csv):
         create_korean_database(korean_csv, korean_db)
         print("Korean database created successfully.")
+
+    turkish_csv = "datasets/turkce_isim.csv"
+    turkish_db = "turkish_database.db"
+    if os.path.exists(turkish_csv):
+        create_turkish_database(turkish_csv, turkish_db)
+        print("Turkish database created successfully.")

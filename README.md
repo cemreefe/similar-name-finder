@@ -7,7 +7,8 @@ This Flask web application helps users find similar names based on phonetic simi
 ## Features
 
 - **Phonetic Similarity:** Users can input a name and choose between different phonetic representations (e.g., English, IPA, Metaphone) to find similar names.
-- **Language Support:** Supports English and Turkish names, with the ability to transliterate Turkish names to IPA for comparison.
+- **Language Support:** Supports English and Turkish input, plus dedicated Arabic, Korean, and Turkish name finders.
+- **Turkish Name Finder:** Search more than 13,000 Turkish given names while preserving Turkish characters and filtering by gender. The data source and licence are documented in [`datasets/TURKISH_NAMES.md`](datasets/TURKISH_NAMES.md).
 - **Customizable Search:** Users can specify the desired phonetic representation and gender for the similar names they want to find.
 
 ## Installation
@@ -30,13 +31,19 @@ This Flask web application helps users find similar names based on phonetic simi
    pip install -r requirements.txt
    ```
 
-4. Run the Flask application:
+4. Build the name databases (including the Turkish database):
 
    ```bash
-   python app.py
+   python preprocessing.py
    ```
 
-5. Open your web browser and go to `http://localhost:5000` to access the application.
+5. Run the Flask application:
+
+   ```bash
+   python -m api.index
+   ```
+
+6. Open your web browser and go to `http://localhost:5000` to access the application.
 
 ## Usage
 
@@ -46,6 +53,8 @@ This Flask web application helps users find similar names based on phonetic simi
 4. Optionally, specify the gender for more tailored results.
 5. Click on the "Find Similar Names" button.
 6. View the results showing similar names based on the selected criteria.
+
+The Turkish name finder is available at `/my-name-in-turkish/`.
 
 ## Acknowledgments
 

@@ -35,7 +35,7 @@
         "@type": "WebApplication",
         "name": "{{ t.title }}",
         "description": "{{ t.meta_description }}",
-        "url": "https://namefinder.dutl.uk",
+        "url": "https://namefinder.dutl.uk{{ finder_path|default('/') }}",
         "applicationCategory": "UtilitiesApplication"
     }
     </script>
@@ -71,7 +71,7 @@
             </div>
         </header>
 
-        <form id="nameForm" class="form" method="GET" action="/find">
+        <form id="nameForm" class="form" method="GET" action="{{ finder_path|default('/find') }}">
             <input type="hidden" name="lang" value="{{ lang }}">
             <label for="name" class="visually-hidden">{{ t.name_placeholder }}</label>
             <input type="text" id="name" name="name" required placeholder="{{ t.name_placeholder }}" value="{{ input_name|default('') }}" autofocus>
@@ -159,6 +159,14 @@
 
         </main>
         <aside class="sidebar">
+            {% if finder_path is not defined %}
+            <a href="{{ product_urls.turkish }}" class="ad-banner">
+                <span class="ad-banner-flag">🇹🇷</span>
+                <span class="ad-banner-title">{{ t.get('ad_banner_turkish_title', t.input_turkish ~ ' ' ~ t.title) }}</span>
+                <span class="ad-banner-desc">{{ t.get('ad_banner_turkish_desc', t.submit) }}</span>
+                <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
+            </a>
+            {% endif %}
             <a href="{{ product_urls.arabic }}" class="ad-banner">
                 <span class="ad-banner-flag">🇸🇦</span>
                 <span class="ad-banner-title">{{ t.ad_banner_arabic_title }}</span>
@@ -210,7 +218,7 @@
     <script>
     function updateFormAction() {
         var name = document.getElementById('name').value;
-        document.getElementById('nameForm').action = '/find/' + encodeURIComponent(name || '');
+        document.getElementById('nameForm').action = {{ finder_path|default('/find')|tojson }} + '/' + encodeURIComponent(name || '');
     }
     document.getElementById('name').addEventListener('input', updateFormAction);
     document.getElementById('name').addEventListener('keydown', function(e) {
@@ -223,7 +231,7 @@
     updateFormAction();
 
     function shareName(input, name) {
-        var text = input + "'s English name is " + name + ". Find yours: https://namefinder.dutl.uk/";
+        var text = input + "'s {{ share_name_label|default('English') }} name is " + name + ". Find yours: https://namefinder.dutl.uk{{ finder_path|default('/') }}";
         if (navigator.share) {
             navigator.share({ title: '{{ t.title }}', text: text }).catch(function(){});
         } else {
