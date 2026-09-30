@@ -107,11 +107,11 @@ def test_default_input_is_auto(client):
     ("Muñoz", None, ["spanish"]),
     ("João", None, ["portuguese"]),
     ("Günter", "turkish", ["turkish", "german"]),
-    ("Mehmet", "turkish", ["turkish", "english"]),
-    ("Mehmet", None, ["turkish", "english"]),
-    ("Ayse", None, ["turkish", "english"]),
+    ("Mehmet", "turkish", ["turkish"]),
+    ("Mehmet", None, ["turkish"]),
+    ("Ayse", None, ["turkish"]),
     ("John", None, ["english"]),
-    ("Mehmet", "korean", ["turkish", "english"]),
+    ("Mehmet", "korean", ["turkish"]),
 ])
 def test_resolve_auto_input_types(name, hint, expected):
     assert resolve_auto_input_types(name, hint) == expected
@@ -142,7 +142,7 @@ def test_hint_forwarded_by_redirect_and_not_canonical(client):
     assert response.headers["Location"] == "/find/Mehmet?hint=turkish"
     html = client.get("/find/Mehmet?hint=turkish").get_data(as_text=True)
     assert '<link rel="canonical" href="https://namefinder.dutl.uk/find/Mehmet">' in html
-    assert "Searched as Turkish + English" in html
+    assert "Searched as Turkish<" in html
 
 
 def test_invalid_query_params_do_not_crash(client):
@@ -187,7 +187,7 @@ def test_results_page_has_summary_and_popular_links(client):
     html = client.get("/find/John").get_data(as_text=True)
     assert 'class="results-summary"' in html
     assert 'class="popular-searches"' in html
-    assert 'href="/find/Mehmet?input_type=turkish"' in html
+    assert 'href="/find/Mehmet"' in html
 
 
 def test_structured_data_is_valid_json(client):
