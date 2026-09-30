@@ -263,6 +263,12 @@ def test_chinese_results_show_pinyin_not_english(client):
     conn.close()
 
 
+@pytest.mark.parametrize("query,hanzi", [("Yuehan", "约翰"), ("Maikeer", "迈克尔")])
+def test_toneless_pinyin_finds_chinese_name_first(client, query, hanzi):
+    html = client.get(f"/my-name-in-chinese/find/{query}").get_data(as_text=True)
+    assert re.findall(r'original-writing[^>]*>([^<]+)<', html)[0] == hanzi
+
+
 def test_exact_spelling_match_ranks_first(client):
     html = client.get("/my-name-in-russian/find/Emma").get_data(as_text=True)
     assert html.index("Эмма") < html.index("Эме")

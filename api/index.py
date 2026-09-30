@@ -551,8 +551,11 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
         out_gender = display_gender.get(name_gender, name_gender)
         similar_names.append((name, out_gender, name_mp, name_ipa, name_ipa_alts, score, original_writing))
 
-    typed = mhelp.strip_accents(input_name).lower()
-    similar_names.sort(key=lambda x: (mhelp.strip_accents(x[0]).lower() != typed and x[6] != input_name, x[5]))
+    def _plain(text: str) -> str:
+        return ''.join(c for c in unicodedata.normalize('NFD', text).lower() if c.isalnum())
+
+    typed = _plain(input_name)
+    similar_names.sort(key=lambda x: (_plain(x[0]) != typed and x[6] != input_name, x[5]))
 
     if not db_gender:
         seen = set()
