@@ -12,3 +12,17 @@ databases with `python preprocessing.py`. Downloaded 2026-09-30.
 
 Because CC-CEDICT and Wiktionary are CC BY-SA 4.0, `chinese_database.db`, `russian_database.db`
 and the two CSVs derived from them are shared under CC BY-SA 4.0 as well.
+
+## English → local name equivalents
+
+`datasets/name_equivalents.csv` (built by `python scripts/fetch_name_equivalents.py`) maps each English name in
+`names_database.db` to its form in the destination languages, so "Michael" on the Spanish finder shows Miguel before
+the (also real, INE-listed) spelling Michael. Two sources:
+
+- `manual`: a short hand-picked list of traditional Spanish equivalents (John → Juan, Peter → Pedro, …) that Wikidata
+  labels don't give.
+- `label`: target-language labels of Wikidata given-name items whose English label is the name (John → Джон,
+  Michael → Miguel/Майкл), CC0. "Said to be the same as" (P460) links were too loose (John → Yann, Jackie) and are not used.
+
+On the Chinese finder the CC-CEDICT mapping is used as the top-tier equivalent. At query time, results matching a
+`manual`/CC-CEDICT equivalent rank first, then `label` equivalents, then an exact spelling match, then phonetic score.

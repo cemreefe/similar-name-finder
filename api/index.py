@@ -24,6 +24,28 @@ _KOREAN_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'korean_database.db')
 _WORLD_DB_PATHS = {p: os.path.join(os.path.dirname(_THIS_DIR), f'{p}_database.db') for p in WORLD_PRODUCTS}
 import re
 import unicodedata
+import csv
+
+
+def _plain(text: str) -> str:
+    return ''.join(c for c in unicodedata.normalize('NFD', text).lower() if c.isalnum())
+
+
+def _load_equivalents() -> dict[tuple[str, str], dict[str, int]]:
+    """(product, plain English name) -> {plain native name: tier}; lower tier ranks first."""
+    root = os.path.dirname(_THIS_DIR)
+    found: dict[tuple[str, str], dict[str, int]] = {}
+    with open(os.path.join(root, 'datasets', 'cedict_chinese.csv'), encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            found.setdefault(('chinese', _plain(r['en'])), {}).setdefault(_plain(r['zh']), 0)
+    with open(os.path.join(root, 'datasets', 'name_equivalents.csv'), encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            tier = 0 if r['source'] == 'manual' else 1
+            found.setdefault((r['product'], _plain(r['en'])), {}).setdefault(_plain(r['native']), tier)
+    return found
+
+
+_EQUIVALENTS = _load_equivalents()
 
 
 class InputType(Enum):
@@ -499,7 +521,7 @@ def _dimension_for(encoded: NameRepr, distance_dimension: str, input_type: str) 
     return dim
 
 
-def get_similar_names(input_name, input_type, distance_dimension, gender, db_path=None, hint=None):
+def get_similar_names(input_name, input_type, distance_dimension, gender, db_path=None, hint=None, product=None):
     db_path = db_path or _DB_PATH
     if input_type == InputType.AUTO.value:
         input_types = resolve_auto_input_types(input_name, hint)
@@ -551,11 +573,14 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
         out_gender = display_gender.get(name_gender, name_gender)
         similar_names.append((name, out_gender, name_mp, name_ipa, name_ipa_alts, score, original_writing))
 
-    def _plain(text: str) -> str:
-        return ''.join(c for c in unicodedata.normalize('NFD', text).lower() if c.isalnum())
-
     typed = _plain(input_name)
-    similar_names.sort(key=lambda x: (_plain(x[0]) != typed and x[6] != input_name, x[5]))
+    preferred = _EQUIVALENTS.get((product, typed), {}) if product else {}
+
+    def _rank(x):
+        tier = min(preferred.get(_plain(x[0]), 2), preferred.get(_plain(x[6] or ''), 2))
+        return tier, _plain(x[0]) != typed and x[6] != input_name, x[5]
+
+    similar_names.sort(key=_rank)
 
     if not db_gender:
         seen = set()
@@ -1230,7 +1255,8 @@ def _world_find(product: str, input_name: str):
     t = get_world_page_translations(product, lang)
 
     similar_names, input_fields = get_similar_names(
-        input_name, input_type, distance_dimension, gender, db_path=_WORLD_DB_PATHS[product], hint=_hint_arg(lang)
+        input_name, input_type, distance_dimension, gender, db_path=_WORLD_DB_PATHS[product], hint=_hint_arg(lang),
+        product=product,
     )
 
     script_mismatches = _get_script_mismatches(input_name, input_type)

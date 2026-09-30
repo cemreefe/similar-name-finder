@@ -269,6 +269,15 @@ def test_toneless_pinyin_finds_chinese_name_first(client, query, hanzi):
     assert re.findall(r'original-writing[^>]*>([^<]+)<', html)[0] == hanzi
 
 
+@pytest.mark.parametrize("product,query,expected", [
+    ("spanish", "Michael", "Miguel"), ("spanish", "John", "Juan"), ("spanish", "Laura", "Laura"),
+    ("russian", "John", "Джон"), ("chinese", "John", "约翰"),
+])
+def test_local_equivalent_ranks_first(product, query, expected):
+    results, _ = get_similar_names(query, "auto", "sound", "", db_path=_WORLD_DB_PATHS[product], product=product)
+    assert expected in (results[0][0], results[0][6])
+
+
 def test_exact_spelling_match_ranks_first(client):
     html = client.get("/my-name-in-russian/find/Emma").get_data(as_text=True)
     assert html.index("Эмма") < html.index("Эме")
