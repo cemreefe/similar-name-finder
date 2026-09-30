@@ -31,6 +31,7 @@ IPA_TO_ENGLISH = {
     'ʌ': 'a', 'ʍ': 'wh', 'ʎ': 'l', 'ʏ': 'y', 'ʐ': 'r', 'd͡ʒ': 'J', 'ʑ': 'z', 'ʒ': 'zh', 
     'ʓ': 'zh', 'ʔ': '', 'ʕ': 'h', 'ʖ': 'r', 'ʗ': 'r', 'ʘ': 'o', 'ʙ': 'b', 'ʚ': 'h', 'ʛ': 'g',
     'ʜ': 'h', 'ʝ': 'y', 'ʞ': 'k', 'ʟ': 'l', 'ʠ': 'q', 'ʡ': 'g', 'ʢ': 'n', 'ʣ': 'z',
+    'θ': 'th', 'ħ': 'h', 'ø': 'e',
     'ʤ': 'J', 'ʥ': 'j', 'ʦ': 'ts', 'ʧ': 'ch', 'ʨ': 'ch', 'ʩ': 'r', 'ʪ': 'l', 'ʫ': 'l',
     'ʬ': 'l', 'ʭ': 'w', 'ʮ': 'h', 'ʯ': 'n', 'ˀ': '', 'ˁ': '', 'ˆ': '', 'ˈ': '', 'ˌ': '',
     'ˍ': '', 'ˎ': '', 'ˏ': '', 'ː': '', 'ˑ': '', 'ˠ': '', 'ˡ': '', 'ˢ': '', 'ˣ': '',
@@ -187,7 +188,7 @@ _SEMI_SINGLE = {
 
     # Stops
     'p': 'P', 'b': 'P',
-    't': 'T', 'd': 'T',
+    't': 'T', 'd': 'T', 'ʈ': 'T', 'ɖ': 'T',
     'k': 'K', 'ɡ': 'K', 'g': 'K', 'ɟ': 'K', 'q': 'K',
 
     # Fricatives (keep s vs sh separate for better nuance)
@@ -195,14 +196,14 @@ _SEMI_SINGLE = {
     's': 'S', 'z': 'S',
     'ʃ': 'X', 'ʒ': 'X', 'ʂ': 'X', 'ɕ': 'X', 'ç': 'X',
     'θ': 'S', 'ð': 'S',
-    'h': 'H', 'x': 'H', 'ɣ': 'H', 'ɦ': 'H',
+    'h': 'H', 'x': 'H', 'ɣ': 'H', 'ɦ': 'H', 'ħ': 'H',
 
     # Nasals
     'm': 'M', 'ɱ': 'M',
-    'n': 'N', 'ŋ': 'N', 'ɲ': 'N',
+    'n': 'N', 'ŋ': 'N', 'ɲ': 'N', 'ɳ': 'N',
 
     # Liquids / glides
-    'r': 'R', 'ɾ': 'R', 'ʀ': 'R', 'ʁ': 'R',
+    'r': 'R', 'ɾ': 'R', 'ʀ': 'R', 'ʁ': 'R', 'ɽ': 'R',
     'l': 'L', 'ɫ': 'L', 'ʎ': 'L',
     'j': 'Y', 'w': 'W', 'ɥ': 'W',
 
@@ -379,7 +380,10 @@ def hangul_to_metaphone(text: str):
 
 def turkish_to_ipa(text: str) -> str:
     """Turkish orthography to IPA."""
-    text = text.lower().strip()
+    # Python's Unicode lowercasing maps İ to ``i`` plus a combining dot and
+    # maps I to i. Turkish distinguishes both letters, so normalize them
+    # before lowercasing.
+    text = text.translate(str.maketrans({'I': 'ı', 'İ': 'i'})).lower().strip()
     result = []
     soft_vowels = 'eiöü'
     for i, c in enumerate(text):
@@ -523,6 +527,288 @@ def french_to_ipa(text: str) -> str:
                     result.append(c)
         i += 1
     return _french_nasalize(''.join(result))
+
+
+_PLAIN_VOWELS = str.maketrans('áàâäãéèêëíìîïóòôöõúùûü', 'aaaaaeeeeiiiiooooouuuu')
+
+
+def strip_accents(text: str) -> str:
+    return text.translate(_PLAIN_VOWELS)
+
+
+def _rewrite(text: str, rules: list[tuple[str, str]]) -> str:
+    for pattern, replacement in rules:
+        text = re.sub(pattern, replacement, text)
+    return text
+
+
+_V = 'aeiouáéíóúàèìòùâêôãõäöüy'
+
+_SPANISH_RULES = [
+    (r'ch', 'tʃ'),
+    (r'll', 'ʝ'),
+    (r'rr', 'r'),
+    (r'ñ', 'ɲ'),
+    (r'qu(?=[eéií])', 'k'),
+    (r'gü', 'ɡw'),
+    (r'gu(?=[eéií])', 'ɡ'),
+    (r'g(?=[eéií])', 'x'),
+    (r'c(?=[eéií])', 's'),
+    (r'[cq]', 'k'),
+    (r'g', 'ɡ'),
+    (r'j', 'x'),
+    (r'z', 's'),
+    (r'v', 'b'),
+    (r'h', ''),
+    (r'y(?=[' + _V + r'])', 'ʝ'),
+    (r'y', 'i'),
+    (r'(?<=[' + _V + r'])r(?=[' + _V + r'])', 'ɾ'),
+]
+
+
+def spanish_to_ipa(text: str) -> str:
+    """Spanish (Latin American) orthography to IPA."""
+    return strip_accents(_rewrite(text.lower().strip(), _SPANISH_RULES))
+
+
+_PORTUGUESE_RULES = [
+    (r'ão', 'ɐ̃w'),
+    (r'ões', 'õjs'),
+    (r'ãe', 'ɐ̃j'),
+    (r'lh', 'ʎ'),
+    (r'nh', 'ɲ'),
+    (r'ch', 'ʃ'),
+    (r'th', 't'),
+    (r'ph', 'f'),
+    (r'x', 'ʃ'),
+    (r'h', ''),
+    (r'^r|rr', 'x'),
+    (r'qu(?=[eéêií])', 'k'),
+    (r'gu(?=[eéêií])', 'ɡ'),
+    (r'g(?=[eéêií])', 'ʒ'),
+    (r'c(?=[eéêií])', 's'),
+    (r'ç', 's'),
+    (r'[cq]', 'k'),
+    (r'g', 'ɡ'),
+    (r'j', 'ʒ'),
+    (r'ss', 's'),
+    (r'(?<=[' + _V + r'])s(?=[' + _V + r'])', 'z'),
+    (r'y', 'i'),
+    (r'e$', 'i'),
+    (r'o$', 'u'),
+    (r'l$', 'w'),
+    (r'd(?=[iíy])', 'd͡ʒ'),
+    (r't(?=[iíy])', 'tʃ'),
+    (r'(?<=[' + _V + r'])r(?=[' + _V + r'])', 'ɾ'),
+]
+
+
+def portuguese_to_ipa(text: str) -> str:
+    """Brazilian Portuguese orthography to IPA."""
+    return strip_accents(_rewrite(text.lower().strip(), _PORTUGUESE_RULES))
+
+
+_GERMAN_RULES = [
+    (r'tsch', 'tʃ'),
+    (r'sch', 'ʃ'),
+    (r'^s(?=[pt])', 'ʃ'),
+    (r'(?<=[aou])ch', 'x'),
+    (r'ch', 'ç'),
+    (r'chs', 'ks'),
+    (r'ck', 'k'),
+    (r'ph', 'f'),
+    (r'th', 't'),
+    (r'dt', 't'),
+    (r'qu', 'kv'),
+    (r'(?:ei|ai|ey|ay)', 'aj'),
+    (r'(?:eu|äu)', 'ɔj'),
+    (r'au', 'aw'),
+    (r'ie', 'i'),
+    (r'ß', 's'),
+    (r'tz', 'ts'),
+    (r'z', 'ts'),
+    (r'^s(?=[' + _V + r'])', 'z'),
+    (r'v', 'f'),
+    (r'w', 'v'),
+    (r'ä', 'ɛ'),
+    (r'ö', 'œ'),
+    (r'ü', 'y'),
+    (r'(?<=[' + _V + r'])h', ''),
+    (r'([bdfgklmnprst])\1', r'\1'),
+    (r'er$', 'ɐ'),
+    (r'r', 'ʁ'),
+    (r'ng$', 'ŋ'),
+    (r'g', 'ɡ'),
+    (r'b$', 'p'),
+    (r'd$', 't'),
+    (r'ɡ$', 'k'),
+]
+
+
+def german_to_ipa(text: str) -> str:
+    """German orthography to IPA."""
+    return _rewrite(text.lower().strip(), _GERMAN_RULES)
+
+
+_ITALIAN_RULES = [
+    (r'gli', 'ʎi'),
+    (r'gn', 'ɲ'),
+    (r'sci(?=[aou])', 'ʃ'),
+    (r'sc(?=[eèéiì])', 'ʃ'),
+    (r'ch', 'k'),
+    (r'gh', 'ɡ'),
+    (r'ci(?=[aou])', 'tʃ'),
+    (r'c(?=[eèéiì])', 'tʃ'),
+    (r'gi(?=[aou])', 'd͡ʒ'),
+    (r'g(?=[eèéiì])', 'd͡ʒ'),
+    (r'qu', 'kw'),
+    (r'[ck]', 'k'),
+    (r'g', 'ɡ'),
+    (r'z', 'ts'),
+    (r'h', ''),
+    (r'([bdfklmnprstv])\1', r'\1'),
+]
+
+
+def italian_to_ipa(text: str) -> str:
+    """Italian orthography to IPA."""
+    return strip_accents(_rewrite(text.lower().strip(), _ITALIAN_RULES))
+
+
+_CYRILLIC_TO_IPA = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'ɡ', 'ґ': 'ɡ', 'д': 'd', 'ж': 'ʒ', 'з': 'z',
+    'и': 'i', 'і': 'i', 'ы': 'ɨ', 'й': 'j', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+    'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'x',
+    'ц': 'ts', 'ч': 'tʃ', 'ш': 'ʃ', 'щ': 'ʃ', 'э': 'e', 'ъ': '', 'ь': '',
+}
+_CYRILLIC_IOTATED = {'е': 'e', 'ё': 'o', 'ю': 'u', 'я': 'a', 'є': 'e', 'ї': 'i'}
+
+_RUSSIAN_LATIN_RULES = [
+    (r'shch', 'ʃ'),
+    (r'kh', 'x'),
+    (r'zh', 'ʒ'),
+    (r'sh', 'ʃ'),
+    (r'ch', 'tʃ'),
+    (r'ts', 'ts'),
+    (r'y(?=[aeiou])', 'j'),
+    (r'y', 'ɨ'),
+    (r'g', 'ɡ'),
+    (r'[’\'"]', ''),
+]
+
+
+def russian_to_ipa(text: str) -> str:
+    """Russian/Ukrainian Cyrillic (or common Latin transliteration) to IPA."""
+    text = text.lower().strip()
+    if not any('\u0400' <= c <= '\u04ff' for c in text):
+        return _rewrite(text, _RUSSIAN_LATIN_RULES)
+    result = []
+    prev = ''
+    for c in text:
+        if c in _CYRILLIC_IOTATED:
+            iotate = prev == '' or prev in 'аеёиоуыэюяіїєъь '
+            result.append(('j' if iotate else '') + _CYRILLIC_IOTATED[c])
+        else:
+            result.append(_CYRILLIC_TO_IPA.get(c, c if c == ' ' else ''))
+        prev = c
+    return ''.join(result)
+
+
+_ARABIC_TO_IPA = {
+    'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'a', 'ٱ': 'a', 'ب': 'b', 'ت': 't', 'ث': 'θ',
+    'ج': 'd͡ʒ', 'ح': 'ħ', 'خ': 'x', 'د': 'd', 'ذ': 'ð', 'ر': 'r', 'ز': 'z', 'س': 's',
+    'ش': 'ʃ', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': '', 'غ': 'ɣ', 'ف': 'f',
+    'ق': 'q', 'ك': 'k', 'ک': 'k', 'گ': 'ɡ', 'ل': 'l', 'م': 'm', 'ن': 'n', 'ه': 'h',
+    'ة': 'a', 'ى': 'a', 'ء': '', 'ئ': '', 'ؤ': '', 'پ': 'p', 'چ': 'tʃ', 'ژ': 'ʒ',
+    'ی': 'j', 'َ': 'a', 'ِ': 'i', 'ُ': 'u', 'ً': 'an', 'ٍ': 'in', 'ٌ': 'un', 'ْ': '',
+    'ـ': '',
+}
+
+
+def arabic_to_ipa(text: str) -> str:
+    """Arabic-script name to a consonant-skeleton IPA (short vowels only when vowelled)."""
+    text = text.strip()
+    result = []
+    for i, c in enumerate(text):
+        prev = text[i - 1] if i > 0 else ' '
+        nxt = text[i + 1] if i + 1 < len(text) else ' '
+        if c == 'ع' and prev == ' ' and nxt not in 'اَُِوي':
+            result.append('a')
+            continue
+        if c == 'ّ':
+            if result:
+                result.append(result[-1][-1])
+            continue
+        if c in 'وي':
+            is_initial = prev == ' '
+            before_vowel = nxt in 'اَُِ'
+            if c == 'و':
+                result.append('w' if is_initial or before_vowel else 'u')
+            else:
+                result.append('j' if is_initial or before_vowel else 'i')
+            continue
+        if c == ' ':
+            continue
+        result.append(_ARABIC_TO_IPA.get(c, ''))
+    return ''.join(result)
+
+
+_DEVANAGARI_CONSONANTS = {
+    'क': 'k', 'ख': 'kʰ', 'ग': 'ɡ', 'घ': 'ɡʱ', 'ङ': 'ŋ', 'च': 'tʃ', 'छ': 'tʃʰ',
+    'ज': 'd͡ʒ', 'झ': 'd͡ʒʱ', 'ञ': 'ɲ', 'ट': 'ʈ', 'ठ': 'ʈʰ', 'ड': 'ɖ', 'ढ': 'ɖʱ',
+    'ण': 'ɳ', 'त': 't', 'थ': 'tʰ', 'द': 'd', 'ध': 'dʱ', 'न': 'n', 'प': 'p',
+    'फ': 'f', 'ब': 'b', 'भ': 'bʱ', 'म': 'm', 'य': 'j', 'र': 'r', 'ल': 'l',
+    'व': 'v', 'श': 'ʃ', 'ष': 'ʃ', 'स': 's', 'ह': 'h', 'ळ': 'l',
+}
+_DEVANAGARI_NUKTA = {'क': 'q', 'ख': 'x', 'ग': 'ɣ', 'ज': 'z', 'फ': 'f', 'ड': 'ɽ', 'ढ': 'ɽ'}
+_DEVANAGARI_VOWELS = {
+    'अ': 'a', 'आ': 'a', 'इ': 'i', 'ई': 'i', 'उ': 'u', 'ऊ': 'u', 'ऋ': 'ri',
+    'ए': 'e', 'ऐ': 'ɛ', 'ओ': 'o', 'औ': 'ɔ',
+}
+_DEVANAGARI_MATRAS = {
+    'ा': 'a', 'ि': 'i', 'ी': 'i', 'ु': 'u', 'ू': 'u', 'ृ': 'ri',
+    'े': 'e', 'ै': 'ɛ', 'ो': 'o', 'ौ': 'ɔ',
+}
+_DEVANAGARI_NASALS = {'ं': 'n', 'ँ': 'n', 'ः': 'h'}
+
+
+def hindi_to_ipa(text: str) -> str:
+    """Devanagari name to IPA with inherent-schwa handling and word-final schwa deletion."""
+    words = []
+    for word in text.strip().split():
+        out: list[str] = []
+        pending_schwa = False
+        i = 0
+        while i < len(word):
+            c = word[i]
+            nxt = word[i + 1] if i + 1 < len(word) else ''
+            if c in _DEVANAGARI_CONSONANTS:
+                if pending_schwa:
+                    out.append('a')
+                if nxt == '़':
+                    out.append(_DEVANAGARI_NUKTA.get(c, _DEVANAGARI_CONSONANTS[c]))
+                    i += 1
+                else:
+                    out.append(_DEVANAGARI_CONSONANTS[c])
+                pending_schwa = True
+            elif c in _DEVANAGARI_MATRAS:
+                out.append(_DEVANAGARI_MATRAS[c])
+                pending_schwa = False
+            elif c == '्':
+                pending_schwa = False
+            elif c in _DEVANAGARI_VOWELS:
+                if pending_schwa:
+                    out.append('a')
+                out.append(_DEVANAGARI_VOWELS[c])
+                pending_schwa = False
+            elif c in _DEVANAGARI_NASALS:
+                if pending_schwa:
+                    out.append('a')
+                    pending_schwa = False
+                out.append(_DEVANAGARI_NASALS[c])
+            i += 1
+        words.append(''.join(out))
+    return ' '.join(w for w in words if w)
 
 
 def _french_nasalize(ipa: str) -> str:

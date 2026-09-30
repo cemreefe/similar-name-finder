@@ -1,0 +1,8 @@
+{% for product, flag in world_finders %}
+            <a href="{{ product_urls[product] }}" class="ad-banner">
+                <span class="ad-banner-flag">{{ flag }}</span>
+                <span class="ad-banner-title">{{ t['ad_banner_' + product + '_title'] }}</span>
+                <span class="ad-banner-desc">{{ t['ad_banner_' + product + '_desc'] }}</span>
+                <span class="ad-banner-cta">{{ t.ad_banner_cta }}</span>
+            </a>
+{% endfor %}

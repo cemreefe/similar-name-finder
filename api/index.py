@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import assert_never
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, Response, render_template, request, redirect, url_for
 try:
-    from api.translations import get_translations, get_arabic_page_translations, get_korean_page_translations, LANGUAGES
+    from api.translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, get_world_page_translations, WORLD_PRODUCTS, LANGUAGES, RTL_LANGUAGES
 except ImportError:
-    from translations import get_translations, get_arabic_page_translations, get_korean_page_translations, LANGUAGES
+    from translations import get_translations, get_arabic_page_translations, get_turkish_page_translations, get_korean_page_translations, get_world_page_translations, WORLD_PRODUCTS, LANGUAGES, RTL_LANGUAGES
 import sqlite3
 from metaphone import doublemetaphone
 import helpers.metaphone_helper as mhelp
@@ -13,14 +13,39 @@ from eng_to_ipa import ipa_list
 from jellyfish import jaro_winkler_similarity, damerau_levenshtein_distance
 import os
 from urllib.parse import quote, unquote, urlencode
+from xml.sax.saxutils import escape
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _BASE_URL = 'https://namefinder.dutl.uk'
 _DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'names_database.db')
 _ARAB_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'arabnames_database.db')
+_TURKISH_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'turkish_database.db')
 _KOREAN_DB_PATH = os.path.join(os.path.dirname(_THIS_DIR), 'korean_database.db')
+_WORLD_DB_PATHS = {p: os.path.join(os.path.dirname(_THIS_DIR), f'{p}_database.db') for p in WORLD_PRODUCTS}
 import re
 import unicodedata
+import csv
+
+
+def _plain(text: str) -> str:
+    return ''.join(c for c in unicodedata.normalize('NFD', text).lower() if c.isalnum())
+
+
+def _load_equivalents() -> dict[tuple[str, str], dict[str, int]]:
+    """(product, plain English name) -> {plain native name: tier}; lower tier ranks first."""
+    root = os.path.dirname(_THIS_DIR)
+    found: dict[tuple[str, str], dict[str, int]] = {}
+    with open(os.path.join(root, 'datasets', 'cedict_chinese.csv'), encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            found.setdefault(('chinese', _plain(r['en'])), {}).setdefault(_plain(r['zh']), 0)
+    with open(os.path.join(root, 'datasets', 'name_equivalents.csv'), encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            tier = 0 if r['source'] == 'manual' else 1
+            found.setdefault((r['product'], _plain(r['en'])), {}).setdefault(_plain(r['native']), tier)
+    return found
+
+
+_EQUIVALENTS = _load_equivalents()
 
 
 class InputType(Enum):
@@ -31,6 +56,14 @@ class InputType(Enum):
     FRENCH = 'french'
     FILIPINO = 'filipino'
     JAPANESE = 'japanese'
+    SPANISH = 'spanish'
+    PORTUGUESE = 'portuguese'
+    GERMAN = 'german'
+    ITALIAN = 'italian'
+    RUSSIAN = 'russian'
+    ARABIC = 'arabic'
+    HINDI = 'hindi'
+    AUTO = 'auto'
     IPA = 'ipa'
     MP = 'mp'
 
@@ -169,6 +202,16 @@ def _encode(name, input_type: InputType) -> NameRepr:
     def japanese_romanized(s: str) -> str | None:
         return _japanese_to_romaji(s)
 
+    def arabic_ipa(s: str) -> str | None:
+        if any('\u0600' <= c <= '\u06ff' for c in s):
+            return mhelp.arabic_to_ipa(s) or None
+        return romanized_ipa(s)
+
+    def hindi_ipa(s: str) -> str | None:
+        if any('\u0900' <= c <= '\u097f' for c in s):
+            return mhelp.hindi_to_ipa(s) or None
+        return romanized_ipa(s)
+
     def _transform(s: str, it: InputType, rep: DistanceDimension, cached_ipa: str | None = None) -> str | None:
         match (it, rep):
             case (InputType.MP, DistanceDimension.MP):
@@ -184,6 +227,20 @@ def _encode(name, input_type: InputType) -> NameRepr:
                 return mhelp.turkish_to_ipa(s)
             case (InputType.FRENCH, DistanceDimension.IPA):
                 return mhelp.french_to_ipa(s)
+            case (InputType.SPANISH, DistanceDimension.IPA):
+                return mhelp.spanish_to_ipa(s)
+            case (InputType.PORTUGUESE, DistanceDimension.IPA):
+                return mhelp.portuguese_to_ipa(s)
+            case (InputType.GERMAN, DistanceDimension.IPA):
+                return mhelp.german_to_ipa(s)
+            case (InputType.ITALIAN, DistanceDimension.IPA):
+                return mhelp.italian_to_ipa(s)
+            case (InputType.RUSSIAN, DistanceDimension.IPA):
+                return mhelp.russian_to_ipa(s)
+            case (InputType.ARABIC, DistanceDimension.IPA):
+                return arabic_ipa(s)
+            case (InputType.HINDI, DistanceDimension.IPA):
+                return hindi_ipa(s)
             case (InputType.CHINESE, DistanceDimension.IPA):
                 return chinese_ipa(s) or romanized_ipa(s)
             case (InputType.KOREAN, DistanceDimension.IPA):
@@ -195,7 +252,23 @@ def _encode(name, input_type: InputType) -> NameRepr:
             case (InputType.ENGLISH | InputType.FILIPINO, DistanceDimension.IPA):
                 return romanized_ipa(s)
 
-            case (InputType.TURKISH | InputType.FRENCH, DistanceDimension.MP):
+            case (InputType.SPANISH, DistanceDimension.MP):
+                return romanized_mp(mhelp.strip_accents(s))
+            case (InputType.ARABIC, DistanceDimension.MP) if not any('\u0600' <= c <= '\u06ff' for c in s):
+                return romanized_mp(s)
+            case (InputType.HINDI, DistanceDimension.MP) if not any('\u0900' <= c <= '\u097f' for c in s):
+                return romanized_mp(s)
+            case (InputType.RUSSIAN, DistanceDimension.MP):
+                ipa = cached_ipa if cached_ipa is not None else _transform(s, it, DistanceDimension.IPA)
+                if not ipa:
+                    return None
+                ipa = ipa.replace('dʒ', 'ʤ').replace('tʃ', 'ʧ').replace('x', 'k')
+                return mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
+            case (
+                InputType.TURKISH | InputType.FRENCH | InputType.PORTUGUESE
+                | InputType.GERMAN | InputType.ITALIAN | InputType.ARABIC | InputType.HINDI,
+                DistanceDimension.MP,
+            ):
                 ipa = cached_ipa if cached_ipa is not None else _transform(s, it, DistanceDimension.IPA)
                 return mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P') if ipa else None
             case (InputType.CHINESE, DistanceDimension.MP):
@@ -361,7 +434,33 @@ app = Flask(__name__)
 @app.context_processor
 def _inject_lang_default_input_type():
     lang = request.args.get('lang', 'en')
-    return {'lang_default_input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}
+    return {'lang_default_input_type': DEFAULT_INPUT_TYPE, 'lang_input_hint': LANG_TO_INPUT_TYPE.get(lang, 'english')}
+
+
+@app.context_processor
+def _inject_seo_context():
+    lang = _get_lang()
+    product = _current_product()
+    return {
+        'ui_flags': UI_FLAGS,
+        'rtl_languages': RTL_LANGUAGES,
+        'input_type_options': (AUTO_INPUT_OPTION,) + INPUT_TYPE_OPTIONS,
+        'canonical_url': _BASE_URL + _canonical_path(),
+        'product_home_url': _BASE_URL + PRODUCT_PATHS[product],
+        'robots_noindex': _is_filtered_request(),
+        'world_finders': [(p, WORLD_FLAGS[p]) for p in WORLD_PRODUCTS if p != product],
+        'popular_links': [
+            (name, _search_path(product, name, input_type, lang))
+            for name, input_type in POPULAR_SEARCHES[product]
+        ],
+    }
+
+
+@app.after_request
+def _cache_headers(response):
+    if request.method == 'GET' and response.status_code in (200, 301, 302, 308) and 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
+    return response
 
 
 def _score(encoded: NameRepr, dim: DistanceDimension, name: str, name_mp: str | None, name_ipa: str | None, name_ipa_alts: str | None) -> float:
@@ -373,10 +472,36 @@ def _score(encoded: NameRepr, dim: DistanceDimension, name: str, name_mp: str | 
     return _score_with_order(encoded, primary, order, name, name_mp, name_ipa, name_ipa_alts)
 
 
-def get_similar_names(input_name, input_type, distance_dimension, gender, db_path=None):
-    db_path = db_path or _DB_PATH
-    encoded = _encode(input_name, InputType(input_type))
+_AUTO_LATIN_TYPES = ('english', 'turkish', 'spanish', 'portuguese', 'german', 'italian', 'french', 'filipino', 'russian')
 
+# First matching group wins; order puts the most language-specific letters first.
+_DIACRITIC_HINTS = (
+    ('ışğİŞĞ', ('turkish',)),
+    ('ñ', ('spanish',)),
+    ('ãõ', ('portuguese',)),
+    ('ß', ('german',)),
+    ('èêëœîû', ('french',)),
+    ('ìò', ('italian',)),
+    ('äöü', ('german', 'turkish')),
+    ('çâ', ('turkish', 'french', 'portuguese')),
+    ('é', ('spanish', 'french', 'portuguese')),
+    ('áíóú', ('spanish', 'portuguese')),
+)
+
+
+def resolve_auto_input_types(name: str, hint: str | None = None) -> list[str]:
+    script = _detect_input_script(name)
+    if script:
+        return [script]
+    for chars, types in _DIACRITIC_HINTS:
+        if any(c in name for c in chars):
+            ordered = sorted(types, key=lambda t: t != hint)
+            return ordered[:3]
+    candidates = [hint] if hint in _AUTO_LATIN_TYPES else []
+    return list(dict.fromkeys(candidates + ['english']))
+
+
+def _dimension_for(encoded: NameRepr, distance_dimension: str, input_type: str) -> DistanceDimension:
     if distance_dimension == 'sound':
         order = _repr_order()
         if DistanceDimension.MP in order and encoded.mp:
@@ -393,6 +518,19 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
         raise ValueError(f"Cannot use semi-phonetic distance with {input_type!r} input")
     if dim is DistanceDimension.MP and encoded.mp is None:
         raise ValueError(f"Cannot use metaphone distance with {input_type!r} input")
+    return dim
+
+
+def get_similar_names(input_name, input_type, distance_dimension, gender, db_path=None, hint=None, product=None):
+    db_path = db_path or _DB_PATH
+    if input_type == InputType.AUTO.value:
+        input_types = resolve_auto_input_types(input_name, hint)
+    else:
+        input_types = [input_type]
+    encodings = []
+    for it in input_types:
+        enc = _encode(input_name, InputType(it))
+        encodings.append((enc, _dimension_for(enc, distance_dimension, it)))
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -416,19 +554,33 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
         s = mp.strip()
         return bool(s) and s not in {'-', '—'}
 
+    best_score_per_encoding = [float('inf')] * len(encodings)
     for row in all_names:
         name, name_gender, name_mp, name_ipa, name_ipa_alts = row[:5]
         original_writing = row[5] if has_original_writing and len(row) > 5 else None
 
-        # If we're doing MP distance, rows without MP can't be meaningfully scored.
-        if dim is DistanceDimension.MP and not _has_mp(name_mp):
+        scores = [
+            # If we're doing MP distance, rows without MP can't be meaningfully scored.
+            float('inf') if dim is DistanceDimension.MP and not _has_mp(name_mp)
+            else _score(enc, dim, name, name_mp, name_ipa, name_ipa_alts)
+            for enc, dim in encodings
+        ]
+        score = min(scores)
+        if score == float('inf'):
             continue
-
-        score = _score(encoded, dim, name, name_mp, name_ipa, name_ipa_alts)
+        for i, sc in enumerate(scores):
+            best_score_per_encoding[i] = min(best_score_per_encoding[i], sc)
         out_gender = display_gender.get(name_gender, name_gender)
         similar_names.append((name, out_gender, name_mp, name_ipa, name_ipa_alts, score, original_writing))
 
-    similar_names.sort(key=lambda x: x[5])
+    typed = _plain(input_name)
+    preferred = _EQUIVALENTS.get((product, typed), {}) if product else {}
+
+    def _rank(x):
+        tier = min(preferred.get(_plain(x[0]), 2), preferred.get(_plain(x[6] or ''), 2))
+        return tier, _plain(x[0]) != typed and x[6] != input_name, x[5]
+
+    similar_names.sort(key=_rank)
 
     if not db_gender:
         seen = set()
@@ -441,13 +593,77 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
     else:
         similar_names = similar_names[:10]
 
+    encoded = encodings[best_score_per_encoding.index(min(best_score_per_encoding))][0]
     return similar_names, encoded
 
 
+DEFAULT_INPUT_TYPE = InputType.AUTO.value
+
+# Latin-script names are also tried in the UI language's input type when auto-detecting.
 LANG_TO_INPUT_TYPE = {
     'en': 'english', 'tr': 'turkish', 'zh': 'chinese', 'ko': 'korean',
-    'hi': 'english', 'es': 'english', 'pt-BR': 'english',
+    'hi': 'english', 'es': 'spanish', 'pt-BR': 'portuguese',
     'fr': 'french', 'fil': 'filipino', 'ja': 'japanese',
+    'de': 'german', 'it': 'italian', 'ru': 'russian', 'ar': 'arabic',
+    'id': 'english', 'vi': 'english',
+}
+
+UI_FLAGS = {
+    'en': '🇬🇧', 'tr': '🇹🇷', 'zh': '🇨🇳', 'ko': '🇰🇷', 'hi': '🇮🇳', 'es': '🇪🇸', 'pt-BR': '🇧🇷',
+    'fr': '🇫🇷', 'fil': '🇵🇭', 'ja': '🇯🇵', 'de': '🇩🇪', 'it': '🇮🇹', 'ru': '🇷🇺', 'ar': '🇸🇦',
+    'id': '🇮🇩', 'vi': '🇻🇳',
+}
+
+INPUT_TYPE_OPTIONS = (
+    ('english', '🇬🇧'), ('turkish', '🇹🇷'), ('chinese', '🇨🇳'), ('korean', '🇰🇷'),
+    ('french', '🇫🇷'), ('filipino', '🇵🇭'), ('japanese', '🇯🇵'), ('spanish', '🇪🇸'),
+    ('portuguese', '🇧🇷'), ('german', '🇩🇪'), ('italian', '🇮🇹'), ('russian', '🇷🇺'),
+    ('arabic', '🇸🇦'), ('hindi', '🇮🇳'),
+)
+AUTO_INPUT_OPTION = ('auto', '✨')
+
+_VALID_INPUT_TYPES = {it.value for it in InputType}
+_VALID_DISTANCE_DIMENSIONS = ('sound', 'spelling', 'mp', 'ipa', 'semi')
+
+PRODUCT_PATHS = {
+    'index': '/',
+    'arabic': '/my-name-in-arabic/',
+    'turkish': '/my-name-in-turkish/',
+    'korean': '/my-name-in-korean/',
+    **{p: f'/my-name-in-{p}/' for p in WORLD_PRODUCTS},
+}
+
+WORLD_FLAGS = {'japanese': '🇯🇵', 'chinese': '🇨🇳', 'spanish': '🇪🇸', 'hindi': '🇮🇳', 'russian': '🇷🇺'}
+
+_WORLD_POPULAR_SEARCHES = (
+    ('John', 'english'), ('Emma', 'english'), ('Michael', 'english'), ('Olivia', 'english'),
+    ('James', 'english'), ('Sophia', 'english'), ('David', 'english'), ('Sarah', 'english'),
+    ('Daniel', 'english'), ('Maria', 'english'), ('Mehmet', 'turkish'), ('Giuseppe', 'italian'),
+)
+
+POPULAR_SEARCHES = {
+    'index': (
+        ('Mehmet', 'turkish'), ('Ayşe', 'turkish'), ('José', 'spanish'), ('João', 'portuguese'),
+        ('Jürgen', 'german'), ('Giuseppe', 'italian'), ('Дмитрий', 'russian'), ('محمد', 'arabic'),
+        ('प्रिया', 'hindi'), ('François', 'french'), ('민준', 'korean'), ('Yuki', 'japanese'),
+        ('Wei', 'chinese'), ('Maria', 'english'),
+    ),
+    'arabic': (
+        ('John', 'english'), ('Michael', 'english'), ('Sarah', 'english'), ('Emily', 'english'),
+        ('David', 'english'), ('Jessica', 'english'), ('Daniel', 'english'), ('Sophia', 'english'),
+        ('Mehmet', 'turkish'), ('Ayşe', 'turkish'), ('José', 'spanish'), ('Дмитрий', 'russian'),
+    ),
+    'turkish': (
+        ('John', 'english'), ('Michael', 'english'), ('Sarah', 'english'), ('Emily', 'english'),
+        ('David', 'english'), ('Maria', 'english'), ('Daniel', 'english'), ('Sophia', 'english'),
+        ('José', 'spanish'), ('Jürgen', 'german'), ('Дмитрий', 'russian'), ('محمد', 'arabic'),
+    ),
+    'korean': (
+        ('John', 'english'), ('Emma', 'english'), ('Michael', 'english'), ('Olivia', 'english'),
+        ('James', 'english'), ('Sophia', 'english'), ('Daniel', 'english'), ('Mia', 'english'),
+        ('Mehmet', 'turkish'), ('José', 'spanish'), ('Giuseppe', 'italian'), ('Дмитрий', 'russian'),
+    ),
+    **{p: _WORLD_POPULAR_SEARCHES for p in WORLD_PRODUCTS},
 }
 
 
@@ -458,6 +674,12 @@ def _detect_input_script(text: str) -> str | None:
     has_hangul = any('\uac00' <= c <= '\ud7af' for c in text)
     has_hiragana_katakana = any('\u3040' <= c <= '\u309f' or '\u30a0' <= c <= '\u30ff' for c in text)
     has_cjk = any('\u4e00' <= c <= '\u9fff' for c in text)
+    if any('\u0400' <= c <= '\u04ff' for c in text):
+        return 'russian'
+    if any('\u0600' <= c <= '\u06ff' for c in text):
+        return 'arabic'
+    if any('\u0900' <= c <= '\u097f' for c in text):
+        return 'hindi'
     if has_hangul:
         return 'korean'
     if has_hiragana_katakana:
@@ -468,6 +690,8 @@ def _detect_input_script(text: str) -> str | None:
 
 
 def _get_script_mismatches(input_name: str, input_type: str) -> list[str]:
+    if input_type == DEFAULT_INPUT_TYPE:
+        return []
     script = _detect_input_script(input_name)
     if not script or script == input_type:
         return []
@@ -485,10 +709,64 @@ def _get_lang():
     return lang if lang in LANGUAGES else 'en'
 
 
+def _input_type_arg(lang: str) -> str:
+    input_type = request.args.get('input_type')
+    return input_type if input_type in _VALID_INPUT_TYPES else DEFAULT_INPUT_TYPE
+
+
+def _hint_arg(lang: str) -> str:
+    hint = request.args.get('hint')
+    return hint if hint in _AUTO_LATIN_TYPES else LANG_TO_INPUT_TYPE.get(lang, 'english')
+
+
+def _auto_detected_types(input_name: str, input_type: str, lang: str) -> list[str]:
+    if input_type != DEFAULT_INPUT_TYPE:
+        return []
+    return resolve_auto_input_types(input_name, _hint_arg(lang))
+
+
+def _collapse_input_type(name: str | None, input_type: str, hint: str) -> str:
+    if name and input_type != DEFAULT_INPUT_TYPE and resolve_auto_input_types(name, hint) == [input_type]:
+        return DEFAULT_INPUT_TYPE
+    return input_type
+
+
+def _distance_dimension_arg() -> str:
+    dim = request.args.get('distance_dimension')
+    return dim if dim in _VALID_DISTANCE_DIMENSIONS else 'sound'
+
+
+def _current_product() -> str:
+    for product, path in PRODUCT_PATHS.items():
+        if product != 'index' and request.path.startswith(path):
+            return product
+    return 'index'
+
+
+def _search_path(product: str, name: str, input_type: str, lang: str = 'en') -> str:
+    input_type = _collapse_input_type(name, input_type, LANG_TO_INPUT_TYPE.get(lang, 'english'))
+    params = _strip_defaults({'lang': lang, 'input_type': input_type}, lang)
+    path = PRODUCT_PATHS[product] + 'find/' + quote(name, safe='')
+    return path + ('?' + urlencode(params) if params else '')
+
+
+def _canonical_path() -> str:
+    lang = _get_lang()
+    name = (request.view_args or {}).get('input_name')
+    input_type = _collapse_input_type(name, _input_type_arg(lang), LANG_TO_INPUT_TYPE.get(lang, 'english'))
+    params = _strip_defaults({'lang': lang, 'input_type': input_type}, lang)
+    return quote(request.path, safe='/') + ('?' + urlencode(params) if params else '')
+
+
+def _is_filtered_request() -> bool:
+    return bool(request.args.get('gender')) or _distance_dimension_arg() != 'sound' \
+        or _input_type_arg(_get_lang()) in ('ipa', 'mp')
+
+
 def _strip_defaults(params: dict, lang: str = 'en') -> dict:
     defaults = {
         'lang': 'en',
-        'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english'),
+        'input_type': DEFAULT_INPUT_TYPE,
         'distance_dimension': 'sound',
         'gender': '',
     }
@@ -500,14 +778,12 @@ def _product_url(path: str, name: str | None = None) -> str:
     if name and name.strip():
         base = base + '/find/' + quote(name.strip(), safe='')
     lang = _get_lang()
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
-    distance_dimension = request.args.get('distance_dimension') or 'sound'
-    if distance_dimension not in ('sound', 'mp', 'ipa', 'semi'):
-        distance_dimension = 'sound'
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
     gender = request.args.get('gender') or ''
     params = _strip_defaults({
         'lang': lang,
-        'input_type': input_type,
+        'input_type': _collapse_input_type(name, input_type, _hint_arg(lang)),
         'distance_dimension': distance_dimension,
         'gender': gender,
     }, lang)
@@ -516,17 +792,13 @@ def _product_url(path: str, name: str | None = None) -> str:
 
 def _product_urls(input_name: str = '') -> dict:
     name = input_name.strip() if input_name else None
-    return {
-        'index': _product_url('/', name),
-        'arabic': _product_url('/my-name-in-arabic/', name),
-        'korean': _product_url('/my-name-in-korean/', name),
-    }
+    return {product: _product_url(path, name) for product, path in PRODUCT_PATHS.items()}
 
 
 def _lang_url(lang_code):
     args = request.args.to_dict()
     args['lang'] = lang_code
-    args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
+    args['input_type'] = DEFAULT_INPUT_TYPE
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
     args = _strip_defaults(args, lang_code)
     return request.path + ('?' + urlencode(args) if args else '')
@@ -537,12 +809,12 @@ def index():
     lang = _get_lang()
     t = get_translations(lang)
     lang_links = [(code, label, _lang_url(code)) for code, (label, _) in LANGUAGES.items()]
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_type = _input_type_arg(lang)
     input_name = unquote(request.args.get('name', '') or '')
     return render_template(
         'index.html', t=t, lang=lang, languages=LANGUAGES, lang_links=lang_links,
         input_type=input_type,
-        distance_dimension=request.args.get('distance_dimension', 'sound'),
+        distance_dimension=_distance_dimension_arg(),
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
@@ -557,15 +829,16 @@ def find_redirect():
     input_name = unquote(input_name or '')
     if not input_name:
         lang = request.args.get('lang', 'en')
-        params = _strip_defaults({'lang': lang, 'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}, lang)
+        params = _strip_defaults({'lang': lang, 'input_type': DEFAULT_INPUT_TYPE}, lang)
         return redirect(url_for('index', **params))
     lang = _get_lang()
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_type = _input_type_arg(lang)
     params = _strip_defaults({
-        'input_type': input_type,
-        'distance_dimension': request.args.get('distance_dimension') or 'sound',
+        'input_type': _collapse_input_type(input_name, input_type, _hint_arg(lang)),
+        'distance_dimension': _distance_dimension_arg(),
         'gender': request.args.get('gender') or '',
         'lang': lang,
+        'hint': request.args.get('hint') if request.args.get('hint') in _AUTO_LATIN_TYPES else '',
     }, lang)
     return redirect(url_for('find_similar_names_pretty', input_name=input_name, **params))
 
@@ -574,12 +847,12 @@ def find_redirect():
 def find_similar_names_pretty(input_name):
     input_name = unquote(input_name)
     lang = _get_lang()
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
-    distance_dimension = request.args.get('distance_dimension') or 'sound'
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
     gender = request.args.get('gender') or ''
     t = get_translations(lang)
 
-    similar_names, input_fields = get_similar_names(input_name, input_type, distance_dimension, gender)
+    similar_names, input_fields = get_similar_names(input_name, input_type, distance_dimension, gender, hint=_hint_arg(lang))
 
     script_mismatches = _get_script_mismatches(input_name, input_type)
     mismatch_cta_links = []
@@ -610,15 +883,17 @@ def find_similar_names_pretty(input_name):
         languages=LANGUAGES,
         lang_links=[(code, label, _lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
+        detected_input_types=_auto_detected_types(input_name, input_type, lang),
         mismatch_cta_links=mismatch_cta_links,
         product_urls=_product_urls(input_name),
+        noindex=not similar_names,
     )
 
 
 def _kr_lang_url(lang_code):
     args = request.args.to_dict()
     args['lang'] = lang_code
-    args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
+    args['input_type'] = DEFAULT_INPUT_TYPE
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
     args = _strip_defaults(args, lang_code)
     path = request.path if request.path.startswith('/my-name-in-korean/find') else '/my-name-in-korean/'
@@ -628,7 +903,7 @@ def _kr_lang_url(lang_code):
 def _ar_lang_url(lang_code):
     args = request.args.to_dict()
     args['lang'] = lang_code
-    args['input_type'] = LANG_TO_INPUT_TYPE.get(lang_code, 'english')
+    args['input_type'] = DEFAULT_INPUT_TYPE
     args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
     args = _strip_defaults(args, lang_code)
     path = request.path if request.path.startswith('/my-name-in-arabic/find') else '/my-name-in-arabic/'
@@ -640,7 +915,7 @@ def arabic_index():
     lang = _get_lang()
     t = get_arabic_page_translations(lang)
     lang_links = [(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()]
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_type = _input_type_arg(lang)
     input_name = unquote(request.args.get('name', '') or '')
     return render_template(
         'arabic.html',
@@ -649,7 +924,7 @@ def arabic_index():
         languages=LANGUAGES,
         lang_links=lang_links,
         input_type=input_type,
-        distance_dimension=request.args.get('distance_dimension', 'sound'),
+        distance_dimension=_distance_dimension_arg(),
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
@@ -664,15 +939,16 @@ def arabic_find_redirect():
     input_name = unquote(input_name or '')
     if not input_name:
         lang = request.args.get('lang', 'en')
-        params = _strip_defaults({'lang': lang, 'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}, lang)
+        params = _strip_defaults({'lang': lang, 'input_type': DEFAULT_INPUT_TYPE}, lang)
         return redirect(url_for('arabic_index', **params))
     lang = _get_lang()
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_type = _input_type_arg(lang)
     params = _strip_defaults({
-        'input_type': input_type,
-        'distance_dimension': request.args.get('distance_dimension') or 'sound',
+        'input_type': _collapse_input_type(input_name, input_type, _hint_arg(lang)),
+        'distance_dimension': _distance_dimension_arg(),
         'gender': request.args.get('gender') or '',
         'lang': lang,
+        'hint': request.args.get('hint') if request.args.get('hint') in _AUTO_LATIN_TYPES else '',
     }, lang)
     return redirect(url_for('find_similar_arabic_names', input_name=input_name, **params))
 
@@ -681,13 +957,13 @@ def arabic_find_redirect():
 def find_similar_arabic_names(input_name):
     input_name = unquote(input_name)
     lang = _get_lang()
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
-    distance_dimension = request.args.get('distance_dimension') or 'sound'
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
     gender = request.args.get('gender') or ''
     t = get_arabic_page_translations(lang)
 
     similar_names, input_fields = get_similar_names(
-        input_name, input_type, distance_dimension, gender, db_path=_ARAB_DB_PATH
+        input_name, input_type, distance_dimension, gender, db_path=_ARAB_DB_PATH, hint=_hint_arg(lang)
     )
 
     script_mismatches = _get_script_mismatches(input_name, input_type)
@@ -719,8 +995,113 @@ def find_similar_arabic_names(input_name):
         languages=LANGUAGES,
         lang_links=[(code, label, _ar_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
+        detected_input_types=_auto_detected_types(input_name, input_type, lang),
         mismatch_cta_links=mismatch_cta_links,
         product_urls=_product_urls(input_name),
+        noindex=not similar_names,
+    )
+
+
+def _tr_lang_url(lang_code):
+    args = request.args.to_dict()
+    args['lang'] = lang_code
+    args['input_type'] = DEFAULT_INPUT_TYPE
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
+    args = _strip_defaults(args, lang_code)
+    path = request.path if request.path.startswith('/my-name-in-turkish/find') else '/my-name-in-turkish/'
+    return path + ('?' + urlencode(args) if args else '')
+
+
+@app.route('/my-name-in-turkish/')
+def turkish_index():
+    lang = _get_lang()
+    t = get_turkish_page_translations(lang)
+    input_name = unquote(request.args.get('name', '') or '')
+    return render_template(
+        'index.html',
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _tr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
+        input_type=_input_type_arg(lang),
+        distance_dimension=_distance_dimension_arg(),
+        gender=request.args.get('gender', ''),
+        script_mismatches=[],
+        mismatch_cta_links=[],
+        product_urls=_product_urls(input_name),
+        finder_path='/my-name-in-turkish/find',
+        share_name_label='Turkish',
+        input_name=input_name,
+    )
+
+
+@app.route('/my-name-in-turkish/find', methods=['GET'])
+def turkish_find_redirect():
+    input_name = unquote(request.args.get('name') or '')
+    if not input_name:
+        lang = request.args.get('lang', 'en')
+        params = _strip_defaults({'lang': lang, 'input_type': DEFAULT_INPUT_TYPE}, lang)
+        return redirect(url_for('turkish_index', **params))
+    lang = _get_lang()
+    input_type = _input_type_arg(lang)
+    params = _strip_defaults({
+        'input_type': _collapse_input_type(input_name, input_type, _hint_arg(lang)),
+        'distance_dimension': _distance_dimension_arg(),
+        'gender': request.args.get('gender') or '',
+        'lang': lang,
+        'hint': request.args.get('hint') if request.args.get('hint') in _AUTO_LATIN_TYPES else '',
+    }, lang)
+    return redirect(url_for('find_similar_turkish_names', input_name=input_name, **params))
+
+
+@app.route('/my-name-in-turkish/find/<string:input_name>', methods=['GET'])
+def find_similar_turkish_names(input_name):
+    input_name = unquote(input_name)
+    lang = _get_lang()
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
+    gender = request.args.get('gender') or ''
+    t = get_turkish_page_translations(lang)
+
+    similar_names, input_fields = get_similar_names(
+        input_name, input_type, distance_dimension, gender, db_path=_TURKISH_DB_PATH, hint=_hint_arg(lang)
+    )
+
+    script_mismatches = _get_script_mismatches(input_name, input_type)
+    mismatch_cta_links = []
+    for suggested_type in script_mismatches:
+        args = _strip_defaults(request.args.to_dict(), lang)
+        args['input_type'] = suggested_type
+        stripped = _strip_defaults(args, lang)
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
+
+    page_title = t['page_title']
+    meta_description = t['meta_description']
+    if input_name:
+        page_title = f"{t['similar_to'].format(name=input_name)} - {t['page_title']}"
+        meta_description = t.get('results_meta_description', t['meta_description']).format(name=input_name)
+
+    return render_template(
+        'index.html',
+        input_name=input_name,
+        input_type=input_type,
+        input_fields=input_fields,
+        similar_names=similar_names,
+        distance_dimension=distance_dimension,
+        gender=gender,
+        page_title=page_title,
+        meta_description=meta_description,
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _tr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
+        script_mismatches=script_mismatches,
+        detected_input_types=_auto_detected_types(input_name, input_type, lang),
+        mismatch_cta_links=mismatch_cta_links,
+        product_urls=_product_urls(input_name),
+        finder_path='/my-name-in-turkish/find',
+        share_name_label='Turkish',
+        noindex=not similar_names,
     )
 
 
@@ -729,7 +1110,7 @@ def korean_index():
     lang = _get_lang()
     t = get_korean_page_translations(lang)
     lang_links = [(code, label, _kr_lang_url(code)) for code, (label, _) in LANGUAGES.items()]
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_type = _input_type_arg(lang)
     input_name = unquote(request.args.get('name', '') or '')
     return render_template(
         'korean.html',
@@ -738,7 +1119,7 @@ def korean_index():
         languages=LANGUAGES,
         lang_links=lang_links,
         input_type=input_type,
-        distance_dimension=request.args.get('distance_dimension', 'sound'),
+        distance_dimension=_distance_dimension_arg(),
         gender=request.args.get('gender', ''),
         script_mismatches=[],
         mismatch_cta_links=[],
@@ -753,15 +1134,16 @@ def korean_find_redirect():
     input_name = unquote(input_name or '')
     if not input_name:
         lang = request.args.get('lang', 'en')
-        params = _strip_defaults({'lang': lang, 'input_type': LANG_TO_INPUT_TYPE.get(lang, 'english')}, lang)
+        params = _strip_defaults({'lang': lang, 'input_type': DEFAULT_INPUT_TYPE}, lang)
         return redirect(url_for('korean_index', **params))
     lang = _get_lang()
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
+    input_type = _input_type_arg(lang)
     params = _strip_defaults({
-        'input_type': input_type,
-        'distance_dimension': request.args.get('distance_dimension') or 'sound',
+        'input_type': _collapse_input_type(input_name, input_type, _hint_arg(lang)),
+        'distance_dimension': _distance_dimension_arg(),
         'gender': request.args.get('gender') or '',
         'lang': lang,
+        'hint': request.args.get('hint') if request.args.get('hint') in _AUTO_LATIN_TYPES else '',
     }, lang)
     return redirect(url_for('find_similar_korean_names', input_name=input_name, **params))
 
@@ -770,13 +1152,13 @@ def korean_find_redirect():
 def find_similar_korean_names(input_name):
     input_name = unquote(input_name)
     lang = _get_lang()
-    input_type = request.args.get('input_type') or LANG_TO_INPUT_TYPE.get(lang, 'english')
-    distance_dimension = request.args.get('distance_dimension') or 'sound'
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
     gender = request.args.get('gender') or ''
     t = get_korean_page_translations(lang)
 
     similar_names, input_fields = get_similar_names(
-        input_name, input_type, distance_dimension, gender, db_path=_KOREAN_DB_PATH
+        input_name, input_type, distance_dimension, gender, db_path=_KOREAN_DB_PATH, hint=_hint_arg(lang)
     )
 
     script_mismatches = _get_script_mismatches(input_name, input_type)
@@ -808,9 +1190,165 @@ def find_similar_korean_names(input_name):
         languages=LANGUAGES,
         lang_links=[(code, label, _kr_lang_url(code)) for code, (label, _) in LANGUAGES.items()],
         script_mismatches=script_mismatches,
+        detected_input_types=_auto_detected_types(input_name, input_type, lang),
         mismatch_cta_links=mismatch_cta_links,
         product_urls=_product_urls(input_name),
+        noindex=not similar_names,
     )
+
+
+def _world_lang_url(product: str, lang_code: str) -> str:
+    args = request.args.to_dict()
+    args['lang'] = lang_code
+    args['input_type'] = DEFAULT_INPUT_TYPE
+    args['distance_dimension'] = args.get('distance_dimension') if args.get('distance_dimension') in ('sound', 'mp', 'ipa', 'semi') else 'sound'
+    args = _strip_defaults(args, lang_code)
+    home = PRODUCT_PATHS[product]
+    path = request.path if request.path.startswith(home + 'find') else home
+    return path + ('?' + urlencode(args) if args else '')
+
+
+def _world_index(product: str):
+    lang = _get_lang()
+    input_name = unquote(request.args.get('name', '') or '')
+    return render_template(
+        'index.html',
+        t=get_world_page_translations(product, lang),
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _world_lang_url(product, code)) for code, (label, _) in LANGUAGES.items()],
+        input_type=_input_type_arg(lang),
+        distance_dimension=_distance_dimension_arg(),
+        gender=request.args.get('gender', ''),
+        script_mismatches=[],
+        mismatch_cta_links=[],
+        product_urls=_product_urls(input_name),
+        finder_path=PRODUCT_PATHS[product] + 'find',
+        share_name_label=product.title(),
+        input_name=input_name,
+    )
+
+
+def _world_find_redirect(product: str):
+    input_name = unquote(request.args.get('name') or '')
+    lang = _get_lang()
+    if not input_name:
+        params = _strip_defaults({'lang': lang, 'input_type': DEFAULT_INPUT_TYPE}, lang)
+        return redirect(url_for(f'{product}_index', **params))
+    input_type = _input_type_arg(lang)
+    params = _strip_defaults({
+        'input_type': _collapse_input_type(input_name, input_type, _hint_arg(lang)),
+        'distance_dimension': _distance_dimension_arg(),
+        'gender': request.args.get('gender') or '',
+        'lang': lang,
+        'hint': request.args.get('hint') if request.args.get('hint') in _AUTO_LATIN_TYPES else '',
+    }, lang)
+    return redirect(url_for(f'find_similar_{product}_names', input_name=input_name, **params))
+
+
+def _world_find(product: str, input_name: str):
+    input_name = unquote(input_name)
+    lang = _get_lang()
+    input_type = _input_type_arg(lang)
+    distance_dimension = _distance_dimension_arg()
+    gender = request.args.get('gender') or ''
+    t = get_world_page_translations(product, lang)
+
+    similar_names, input_fields = get_similar_names(
+        input_name, input_type, distance_dimension, gender, db_path=_WORLD_DB_PATHS[product], hint=_hint_arg(lang),
+        product=product,
+    )
+
+    script_mismatches = _get_script_mismatches(input_name, input_type)
+    mismatch_cta_links = []
+    for suggested_type in script_mismatches:
+        args = _strip_defaults(request.args.to_dict(), lang)
+        args['input_type'] = suggested_type
+        stripped = _strip_defaults(args, lang)
+        mismatch_cta_links.append((suggested_type, request.path + ('?' + urlencode(stripped) if stripped else '')))
+
+    return render_template(
+        'index.html',
+        input_name=input_name,
+        input_type=input_type,
+        input_fields=input_fields,
+        similar_names=similar_names,
+        distance_dimension=distance_dimension,
+        gender=gender,
+        page_title=f"{t['similar_to'].format(name=input_name)} - {t['page_title']}",
+        meta_description=t['results_meta_description'].format(name=input_name),
+        t=t,
+        lang=lang,
+        languages=LANGUAGES,
+        lang_links=[(code, label, _world_lang_url(product, code)) for code, (label, _) in LANGUAGES.items()],
+        script_mismatches=script_mismatches,
+        detected_input_types=_auto_detected_types(input_name, input_type, lang),
+        mismatch_cta_links=mismatch_cta_links,
+        product_urls=_product_urls(input_name),
+        finder_path=PRODUCT_PATHS[product] + 'find',
+        share_name_label=product.title(),
+        noindex=not similar_names,
+    )
+
+
+for _product in WORLD_PRODUCTS:
+    _home = PRODUCT_PATHS[_product]
+    app.add_url_rule(_home, f'{_product}_index', lambda p=_product: _world_index(p))
+    app.add_url_rule(_home + 'find', f'{_product}_find_redirect', lambda p=_product: _world_find_redirect(p))
+    app.add_url_rule(
+        _home + 'find/<string:input_name>',
+        f'find_similar_{_product}_names',
+        lambda input_name, p=_product: _world_find(p, input_name),
+    )
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    body = f"User-agent: *\nAllow: /\n\nSitemap: {_BASE_URL}/sitemap.xml\n"
+    return Response(body, mimetype='text/plain')
+
+
+def _sitemap_paths() -> list[str]:
+    paths: list[str] = []
+    for product, home in PRODUCT_PATHS.items():
+        for lang in LANGUAGES:
+            params = _strip_defaults({'lang': lang}, lang)
+            paths.append(home + ('?' + urlencode(params) if params else ''))
+        for lang in LANGUAGES:
+            for name, input_type in POPULAR_SEARCHES[product]:
+                paths.append(_search_path(product, name, input_type, lang))
+
+    def distinct(db_path: str, column: str) -> list[str]:
+        conn = sqlite3.connect(db_path)
+        try:
+            rows = conn.execute(f'SELECT DISTINCT {column} FROM names WHERE {column} IS NOT NULL ORDER BY {column}').fetchall()
+        finally:
+            conn.close()
+        return [r[0].strip() for r in rows if r[0] and r[0].strip()]
+
+    for name in distinct(_DB_PATH, 'name'):
+        paths.append(_search_path('arabic', name.title(), 'english'))
+        paths.append(_search_path('korean', name.title(), 'english'))
+        paths.append(_search_path('turkish', name.title(), 'english'))
+    for name in distinct(_ARAB_DB_PATH, 'original_writing'):
+        paths.append(_search_path('index', name, 'arabic'))
+    for name in distinct(_TURKISH_DB_PATH, 'name'):
+        paths.append(_search_path('index', name, 'turkish'))
+    for name in distinct(_KOREAN_DB_PATH, 'original_writing'):
+        if _detect_input_script(name) == 'korean':
+            paths.append(_search_path('index', name, 'korean'))
+    for name in distinct(_DB_PATH, 'name'):
+        paths.append(_search_path('chinese', name.title(), 'english'))
+    for name in distinct(_WORLD_DB_PATHS['hindi'], 'name'):
+        paths.append(_search_path('hindi', name, 'english'))
+    return list(dict.fromkeys(paths))
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    urls = ''.join(f'<url><loc>{escape(_BASE_URL + p)}</loc></url>' for p in _sitemap_paths())
+    body = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
+    return Response(body, mimetype='application/xml')
 
 
 if __name__ == '__main__':
