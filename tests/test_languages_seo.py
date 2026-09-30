@@ -1,9 +1,10 @@
 import re
+import sqlite3
 from urllib.parse import quote
 
 import pytest
 
-from api.index import resolve_auto_input_types, app, get_similar_names, _detect_input_script, _ARAB_DB_PATH, _TURKISH_DB_PATH
+from api.index import resolve_auto_input_types, app, get_similar_names, _detect_input_script, _ARAB_DB_PATH, _TURKISH_DB_PATH, _WORLD_DB_PATHS
 from api.translations import (
     LANGUAGES, TRANSLATIONS, ARABIC_PAGE_TRANSLATIONS, KOREAN_PAGE_TRANSLATIONS, TURKISH_PAGE_TRANSLATIONS,
     WORLD_LANGUAGE_NAMES, WORLD_PAGE_TEMPLATES, WORLD_PRODUCTS, get_world_page_translations,
@@ -232,7 +233,24 @@ WORLD_EXPECTATIONS = [
     ("spanish", "Michael", "Miguel"),
     ("hindi", "Rahul", "राहुल"),
     ("russian", "Дмитрий", "Дмитрий"),
+    ("chinese", "John", "约翰"),
+    ("chinese", "David", "大卫"),
+    ("russian", "Emma", "Эмма"),
+    ("russian", "Джон", "Джон"),
+    ("spanish", "Lucia", "Lucía"),
 ]
+
+
+@pytest.mark.parametrize("product,minimum", [("chinese", 10000), ("spanish", 3000), ("russian", 20000)])
+def test_supplemented_world_databases_are_large(product, minimum):
+    conn = sqlite3.connect(_WORLD_DB_PATHS[product])
+    assert conn.execute("SELECT COUNT(*) FROM names").fetchone()[0] >= minimum
+    conn.close()
+
+
+def test_exact_spelling_match_ranks_first(client):
+    html = client.get("/my-name-in-russian/find/Emma").get_data(as_text=True)
+    assert html.index("Эмма") < html.index("Эме")
 
 
 @pytest.mark.parametrize("product,query,expected", WORLD_EXPECTATIONS)

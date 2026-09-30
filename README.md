@@ -9,7 +9,7 @@ This Flask web application helps users find similar names based on phonetic simi
 - **Phonetic Similarity:** Users can input a name and choose between different phonetic representations (e.g., English, IPA, Metaphone) to find similar names.
 - **Language Support:** Input names in English, Turkish, Spanish, Portuguese, German, Italian, French, Filipino, Russian (Cyrillic), Arabic script, Hindi (Devanagari), Chinese, Korean (Hangul), and Japanese — each is transliterated to IPA/Metaphone for comparison. The interface is available in 16 languages.
 - **Turkish Name Finder:** Search more than 13,000 Turkish given names while preserving Turkish characters and filtering by gender. The data source and licence are documented in [`datasets/TURKISH_NAMES.md`](datasets/TURKISH_NAMES.md).
-- **Japanese, Chinese, Spanish, Hindi and Russian Name Finders:** `/my-name-in-<language>/` searches given names from Wikidata (CC0) and shows each match in its native script. See [`datasets/WIKIDATA_NAMES.md`](datasets/WIKIDATA_NAMES.md).
+- **Japanese, Chinese, Spanish, Hindi and Russian Name Finders:** `/my-name-in-<language>/` searches given names from Wikidata (CC0) and shows each match in its native script. Chinese, Spanish and Russian are supplemented with CC-CEDICT, INE Spain and Russian Wiktionary. See [`datasets/WIKIDATA_NAMES.md`](datasets/WIKIDATA_NAMES.md) and [`datasets/EXTRA_NAMES.md`](datasets/EXTRA_NAMES.md) for sources and licences.
 - **Customizable Search:** Users can specify the desired phonetic representation and gender for the similar names they want to find.
 
 ## Installation

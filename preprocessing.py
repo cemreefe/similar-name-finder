@@ -343,8 +343,58 @@ def _wikidata_row(product: str, row: dict) -> tuple[str, str | None, NameRepr] |
     return en, native, _encode(en, InputType.ENGLISH)
 
 
+_SUPPLEMENTARY_CSVS = {
+    'chinese': 'datasets/cedict_chinese.csv',
+    'spanish': 'datasets/ine_spanish.csv',
+    'russian': 'datasets/wiktionary_russian.csv',
+}
+
+
+# INE lists every name held by >= 20 people; rare spellings (Maiquel, Maycol) crowd out equivalents like Miguel.
+_INE_MIN_FREQUENCY = 500
+
+
+def _english_genders(db_file='names_database.db') -> dict[str, str]:
+    conn = sqlite3.connect(db_file)
+    found = {}
+    for name, gender in conn.execute("SELECT name, gender FROM names WHERE gender IN ('boy', 'girl')"):
+        found.setdefault(name.lower(), set()).add(gender)
+    conn.close()
+    return {n: 'unisex' if len(g) > 1 else {'boy': 'male', 'girl': 'female'}[g.pop()] for n, g in found.items()}
+
+
+def _supplementary_rows(product: str, wikidata_rows: list[dict]) -> list[dict]:
+    """Rows from scripts/fetch_extra_names.py, in the Wikidata CSV row shape."""
+    path = _SUPPLEMENTARY_CSVS.get(product)
+    if not path or not os.path.exists(path):
+        return []
+    with open(path, encoding='utf-8') as f:
+        rows = list(csv.DictReader(f))
+    out = []
+    if product == 'chinese':
+        genders = _english_genders()
+        for r in rows:
+            if r['en'].lower() in genders:
+                out.append({'qid': '', 'gender': genders[r['en'].lower()], 'native': r['zh'],
+                            'native_lang': 'zh-hans', 'ru': '', 'en': r['en']})
+    elif product == 'spanish':
+        accented = {mhelp.strip_accents(r['native']).lower(): r['native'] for r in wikidata_rows if r['native']}
+        for r in rows:
+            if int(r['frequency']) < _INE_MIN_FREQUENCY:
+                continue
+            key = r['name'].lower()
+            out.append({'qid': '', 'gender': r['gender'], 'native': accented.get(key, key.title()),
+                        'native_lang': 'es', 'ru': '', 'en': ''})
+    elif product == 'russian':
+        for r in rows:
+            out.append({'qid': '', 'gender': r['gender'], 'native': r['name'], 'native_lang': 'ru',
+                        'ru': r['name'], 'en': ''})
+    return out
+
+
 def create_wikidata_database(product, csv_file, db_file):
-    """Build a name database from a CC0 Wikidata export (scripts/fetch_wikidata_names.py)."""
+    """Build a name database from a CC0 Wikidata export (scripts/fetch_wikidata_names.py)
+    plus the supplementary lists from scripts/fetch_extra_names.py."""
     with open(csv_file, encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
     if product == 'chinese':
@@ -353,6 +403,9 @@ def create_wikidata_database(product, csv_file, db_file):
         for r in rows:
             best.setdefault((r['qid'], r['gender']), r)
         rows = list(best.values())
+    rows.sort(key=lambda r: int(r['qid'][1:]))
+    extra = _supplementary_rows(product, rows)
+    rows = extra + rows if product == 'chinese' else rows + extra
 
     if os.path.exists(db_file):
         os.remove(db_file)
@@ -368,14 +421,19 @@ def create_wikidata_database(product, csv_file, db_file):
                         PRIMARY KEY (name, gender)
                     )''')
     genders = {'male': ('boy',), 'female': ('girl',), 'unisex': ('boy', 'girl')}
-    for row in tqdm(sorted(rows, key=lambda r: int(r['qid'][1:])), desc=f"Processing {product} names"):
+    seen = set()
+    for row in tqdm(rows, desc=f"Processing {product} names"):
         parsed = _wikidata_row(product, row)
         if parsed is None:
             continue
         name, original, enc = parsed
         if not (enc.mp or enc.ipa):
             continue
+        key = original if product == 'russian' else mhelp.strip_accents(name).lower()
         for gender in genders[row['gender']]:
+            if (key, gender) in seen:
+                continue
+            seen.add((key, gender))
             cursor.execute(
                 '''INSERT OR IGNORE INTO names (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives, original_writing)
                    VALUES (?, ?, ?, ?, ?, ?)''',

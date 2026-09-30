@@ -236,9 +236,15 @@ def _encode(name, input_type: InputType) -> NameRepr:
                 return romanized_mp(s)
             case (InputType.HINDI, DistanceDimension.MP) if not any('\u0900' <= c <= '\u097f' for c in s):
                 return romanized_mp(s)
+            case (InputType.RUSSIAN, DistanceDimension.MP):
+                ipa = cached_ipa if cached_ipa is not None else _transform(s, it, DistanceDimension.IPA)
+                if not ipa:
+                    return None
+                ipa = ipa.replace('dʒ', 'ʤ').replace('tʃ', 'ʧ').replace('x', 'k')
+                return mhelp.map_ipa_to_metaphone(ipa).upper().replace('B', 'P')
             case (
                 InputType.TURKISH | InputType.FRENCH | InputType.PORTUGUESE
-                | InputType.GERMAN | InputType.ITALIAN | InputType.RUSSIAN | InputType.ARABIC | InputType.HINDI,
+                | InputType.GERMAN | InputType.ITALIAN | InputType.ARABIC | InputType.HINDI,
                 DistanceDimension.MP,
             ):
                 ipa = cached_ipa if cached_ipa is not None else _transform(s, it, DistanceDimension.IPA)
@@ -545,7 +551,8 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
         out_gender = display_gender.get(name_gender, name_gender)
         similar_names.append((name, out_gender, name_mp, name_ipa, name_ipa_alts, score, original_writing))
 
-    similar_names.sort(key=lambda x: x[5])
+    typed = mhelp.strip_accents(input_name).lower()
+    similar_names.sort(key=lambda x: (mhelp.strip_accents(x[0]).lower() != typed and x[6] != input_name, x[5]))
 
     if not db_gender:
         seen = set()
