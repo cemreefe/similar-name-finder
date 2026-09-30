@@ -108,8 +108,10 @@ def test_default_input_is_auto(client):
     ("João", None, ["portuguese"]),
     ("Günter", "turkish", ["turkish", "german"]),
     ("Mehmet", "turkish", ["turkish", "english"]),
-    ("Mehmet", None, ["english"]),
-    ("Mehmet", "korean", ["english"]),
+    ("Mehmet", None, ["turkish", "english"]),
+    ("Ayse", None, ["turkish", "english"]),
+    ("John", None, ["english"]),
+    ("Mehmet", "korean", ["turkish", "english"]),
 ])
 def test_resolve_auto_input_types(name, hint, expected):
     assert resolve_auto_input_types(name, hint) == expected
