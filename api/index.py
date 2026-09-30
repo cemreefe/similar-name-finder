@@ -498,8 +498,10 @@ def resolve_auto_input_types(name: str, hint: str | None = None) -> list[str]:
         if any(c in name for c in chars):
             ordered = sorted(types, key=lambda t: t != hint)
             return ordered[:3]
-    listed = [t for t in _native_name_langs().get(_plain(name), ()) if t != hint]
-    candidates = listed[:1] + ([hint] if hint in _AUTO_LATIN_TYPES else [])
+    listed = _native_name_langs().get(_plain(name))
+    if listed:
+        return sorted(listed, key=lambda t: t != hint)
+    candidates = [hint] if hint in _AUTO_LATIN_TYPES else []
     return list(dict.fromkeys(candidates + ['english']))
 
 
