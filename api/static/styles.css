@@ -671,6 +671,17 @@ body {
     color: #0369a1;
 }
 
+@media (max-width: 768px) {
+    .name-item {
+        grid-template-columns: 1fr;
+    }
+
+    .name-item-meta {
+        justify-self: stretch;
+        margin-top: 0.35rem;
+    }
+}
+
 .content {
     max-width: 36rem;
     margin: 3rem auto 0;
