@@ -78,7 +78,7 @@
         <form id="nameForm" class="form" method="GET" action="/my-name-in-arabic/find">
             <input type="hidden" name="lang" value="{{ lang }}">
             <label for="name" class="visually-hidden">{{ t.name_placeholder }}</label>
-            <input type="text" id="name" name="name" required placeholder="{{ t.name_placeholder }}" value="{{ input_name|default('') }}" autofocus>
+            <input type="text" id="name" name="name" required placeholder="{{ t.name_placeholder }}" value="{{ input_name|default('') }}">
 
             <div class="options">
                 <div class="options-grid">
@@ -230,6 +230,10 @@
     </div>
 
     <script>
+    (function() {
+        var input = document.getElementById('name');
+        if (!input.value && window.matchMedia('(hover: hover) and (pointer: fine)').matches) input.focus();
+    })();
     function updateFormAction() {
         var name = document.getElementById('name').value;
         document.getElementById('nameForm').action = '/my-name-in-arabic/find/' + encodeURIComponent(name || '');

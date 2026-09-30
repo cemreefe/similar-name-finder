@@ -25,6 +25,7 @@ _WORLD_DB_PATHS = {p: os.path.join(os.path.dirname(_THIS_DIR), f'{p}_database.db
 import re
 import unicodedata
 import csv
+from functools import cache
 
 
 def _plain(text: str) -> str:
@@ -497,8 +498,30 @@ def resolve_auto_input_types(name: str, hint: str | None = None) -> list[str]:
         if any(c in name for c in chars):
             ordered = sorted(types, key=lambda t: t != hint)
             return ordered[:3]
-    candidates = [hint] if hint in _AUTO_LATIN_TYPES else []
+    listed = [t for t in _native_name_langs().get(_plain(name), ()) if t != hint]
+    candidates = listed[:1] + ([hint] if hint in _AUTO_LATIN_TYPES else [])
     return list(dict.fromkeys(candidates + ['english']))
+
+
+_NAME_LIST_INPUT_TYPES = (('turkish', _TURKISH_DB_PATH), ('spanish', _WORLD_DB_PATHS['spanish']))
+
+
+@cache
+def _native_name_langs() -> dict[str, tuple[str, ...]]:
+    """Plain name -> input types whose name list has it, for names absent from the English list."""
+    def names(path: str) -> set[str]:
+        conn = sqlite3.connect(path)
+        try:
+            return {_plain(n) for (n,) in conn.execute('SELECT DISTINCT name FROM names')}
+        finally:
+            conn.close()
+
+    english = names(_DB_PATH)
+    found: dict[str, tuple[str, ...]] = {}
+    for input_type, path in _NAME_LIST_INPUT_TYPES:
+        for n in names(path) - english:
+            found[n] = found.get(n, ()) + (input_type,)
+    return found
 
 
 def _dimension_for(encoded: NameRepr, distance_dimension: str, input_type: str) -> DistanceDimension:
