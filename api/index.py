@@ -1308,9 +1308,10 @@ def _sitemap_paths() -> list[str]:
     for name in distinct(_KOREAN_DB_PATH, 'original_writing'):
         if _detect_input_script(name) == 'korean':
             paths.append(_search_path('index', name, 'korean'))
-    for product in ('chinese', 'hindi'):
-        for name in distinct(_WORLD_DB_PATHS[product], 'name'):
-            paths.append(_search_path(product, name, 'english'))
+    for name in distinct(_DB_PATH, 'name'):
+        paths.append(_search_path('chinese', name.title(), 'english'))
+    for name in distinct(_WORLD_DB_PATHS['hindi'], 'name'):
+        paths.append(_search_path('hindi', name, 'english'))
     return list(dict.fromkeys(paths))
 
 

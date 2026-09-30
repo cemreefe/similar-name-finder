@@ -5,6 +5,7 @@ from urllib.parse import quote
 import pytest
 
 from api.index import resolve_auto_input_types, app, get_similar_names, _detect_input_script, _ARAB_DB_PATH, _TURKISH_DB_PATH, _WORLD_DB_PATHS
+from preprocessing import _hanzi_to_pinyin
 from api.translations import (
     LANGUAGES, TRANSLATIONS, ARABIC_PAGE_TRANSLATIONS, KOREAN_PAGE_TRANSLATIONS, TURKISH_PAGE_TRANSLATIONS,
     WORLD_LANGUAGE_NAMES, WORLD_PAGE_TEMPLATES, WORLD_PRODUCTS, get_world_page_translations,
@@ -245,6 +246,20 @@ WORLD_EXPECTATIONS = [
 def test_supplemented_world_databases_are_large(product, minimum):
     conn = sqlite3.connect(_WORLD_DB_PATHS[product])
     assert conn.execute("SELECT COUNT(*) FROM names").fetchone()[0] >= minimum
+    conn.close()
+
+
+@pytest.mark.parametrize("hanzi,expected", [("约翰", "Yuēhàn"), ("迈克尔", "Màikè'ěr"), ("玛丽·安", "Mǎlì Ān")])
+def test_hanzi_to_pinyin(hanzi, expected):
+    assert _hanzi_to_pinyin(hanzi) == expected
+
+
+def test_chinese_results_show_pinyin_not_english(client):
+    html = client.get("/my-name-in-chinese/find/John").get_data(as_text=True)
+    assert "Yuēhàn" in html
+    conn = sqlite3.connect(_WORLD_DB_PATHS["chinese"])
+    assert conn.execute("SELECT name FROM names WHERE original_writing = '约翰'").fetchone()[0] == "Yuēhàn"
+    assert conn.execute("SELECT COUNT(*) FROM names WHERE name = 'John'").fetchone()[0] == 0
     conn.close()
 
 

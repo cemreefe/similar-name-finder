@@ -19,3 +19,5 @@ with `python preprocessing.py`. Exported 2026-09-29.
 Columns: `qid, gender (male/female/unisex), native, native_lang, ru, en`. Unisex names are stored
 for both gender filters. Rows whose native writing is not in the expected script, or whose
 romanized name is not Latin, are skipped by `preprocessing.create_wikidata_database`.
+Chinese names are displayed as Hanzi plus tone-marked Pinyin (约翰 → Yuēhàn, via `pypinyin`); the
+English label is only used to compute the sound codes that English input is matched against.

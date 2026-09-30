@@ -1,7 +1,10 @@
 import csv
 import os
+import re
+import unicodedata
 import sqlite3
 from tqdm import tqdm
+from pypinyin import pinyin, Style
 from metaphone import doublemetaphone
 from eng_to_ipa import ipa_list
 
@@ -316,6 +319,16 @@ def _cyrillic_to_latin(text: str) -> str:
     return ''.join(_CYRILLIC_TO_LATIN.get(c, c) for c in text.lower())
 
 
+def _hanzi_to_pinyin(text: str) -> str:
+    """约翰 -> Yuēhàn, 迈克尔 -> Màikè'ěr (apostrophe before a/o/e syllables), 玛丽·安 -> Mǎlì Ān."""
+    words = []
+    for part in filter(None, re.split('[·-]', text)):
+        syls = [s[0] for s in pinyin(part, style=Style.TONE)]
+        word = syls[0] + ''.join(("'" if unicodedata.normalize('NFD', x)[:1] in ('a', 'o', 'e') else '') + x for x in syls[1:])
+        words.append(word.capitalize())
+    return ' '.join(words)
+
+
 def _wikidata_row(product: str, row: dict) -> tuple[str, str | None, NameRepr] | None:
     """Return (display name, original writing, encoding) for one Wikidata given-name row."""
     native = row['native'].strip()
@@ -340,6 +353,8 @@ def _wikidata_row(product: str, row: dict) -> tuple[str, str | None, NameRepr] |
         return name, native, _encode(mhelp.strip_accents(name), InputType.JAPANESE)
     if not _is_latin_name(en):
         return None
+    if product == 'chinese':
+        return _hanzi_to_pinyin(native), native, _encode(en, InputType.ENGLISH)
     return en, native, _encode(en, InputType.ENGLISH)
 
 
@@ -373,6 +388,7 @@ def _supplementary_rows(product: str, wikidata_rows: list[dict]) -> list[dict]:
     out = []
     if product == 'chinese':
         genders = _english_genders()
+        genders.update({r['en'].lower(): r['gender'] for r in wikidata_rows if r['en']})
         for r in rows:
             if r['en'].lower() in genders:
                 out.append({'qid': '', 'gender': genders[r['en'].lower()], 'native': r['zh'],
@@ -429,7 +445,7 @@ def create_wikidata_database(product, csv_file, db_file):
         name, original, enc = parsed
         if not (enc.mp or enc.ipa):
             continue
-        key = original if product == 'russian' else mhelp.strip_accents(name).lower()
+        key = original if product in ('russian', 'chinese') else mhelp.strip_accents(name).lower()
         for gender in genders[row['gender']]:
             if (key, gender) in seen:
                 continue
