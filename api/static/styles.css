@@ -1024,6 +1024,9 @@ body.korean-theme .advanced-toggle.on {
 }
 
 .transliteration-label {
+    display: block;
+    width: fit-content;
+    margin-top: 0.3rem;
     font-size: 0.75rem;
     font-weight: 600;
     color: #92400e;
