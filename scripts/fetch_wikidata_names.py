@@ -1,6 +1,6 @@
 """Download given names from Wikidata (CC0) into datasets/wikidata_<product>.csv.
 
-Usage: python scripts/fetch_wikidata_names.py [japanese chinese spanish hindi russian]
+Usage: python scripts/fetch_wikidata_names.py [japanese spanish hindi]
 """
 import csv
 import json
@@ -21,13 +21,6 @@ SELECT ?n ?t ?native ?en WHERE {{
   FILTER(LANG(?native) = "ja")
   OPTIONAL {{ ?n rdfs:label ?en FILTER(LANG(?en) = "en") }}
 }}''',
-    'chinese': f'''
-SELECT ?n ?t ?native ?en WHERE {{
-  {GENDER_TYPES}
-  ?n wdt:P31 ?t ; rdfs:label ?native ; rdfs:label ?en .
-  FILTER(LANG(?native) = "zh-hans" || LANG(?native) = "zh-cn" || LANG(?native) = "zh")
-  FILTER(LANG(?en) = "en")
-}}''',
     'hindi': f'''
 SELECT ?n ?t ?native ?en WHERE {{
   {GENDER_TYPES}
@@ -40,15 +33,6 @@ SELECT ?n ?t ?native ?en WHERE {{
   {GENDER_TYPES}
   ?n wdt:P31 ?t ; wdt:P407 wd:Q1321 .
   OPTIONAL {{ ?n rdfs:label ?native FILTER(LANG(?native) = "es") }}
-  OPTIONAL {{ ?n rdfs:label ?en FILTER(LANG(?en) = "en") }}
-}}''',
-    'russian': f'''
-SELECT ?n ?t ?native ?ru ?en WHERE {{
-  {GENDER_TYPES}
-  ?n wdt:P31 ?t .
-  {{ ?n wdt:P282 wd:Q8209 }} UNION {{ ?n wdt:P407 wd:Q7737 }}
-  OPTIONAL {{ ?n wdt:P1705 ?native FILTER(LANG(?native) = "ru") }}
-  OPTIONAL {{ ?n rdfs:label ?ru FILTER(LANG(?ru) = "ru") }}
   OPTIONAL {{ ?n rdfs:label ?en FILTER(LANG(?en) = "en") }}
 }}''',
 }

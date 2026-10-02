@@ -39,6 +39,10 @@ def _load_equivalents() -> dict[tuple[str, str], dict[str, int]]:
     with open(os.path.join(root, 'datasets', 'cedict_chinese.csv'), encoding='utf-8') as f:
         for r in csv.DictReader(f):
             found.setdefault(('chinese', _plain(r['en'])), {}).setdefault(_plain(r['zh']), 0)
+    with open(os.path.join(root, 'datasets', 'nen_russian.csv'), encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            for form in filter(None, (x.strip() for x in r['international_forms'].split(';'))):
+                found.setdefault(('russian', _plain(form)), {}).setdefault(_plain(r['name']), 0)
     with open(os.path.join(root, 'datasets', 'name_equivalents.csv'), encoding='utf-8') as f:
         for r in csv.DictReader(f):
             tier = 0 if r['source'] == 'manual' else 1
@@ -47,6 +51,22 @@ def _load_equivalents() -> dict[tuple[str, str], dict[str, int]]:
 
 
 _EQUIVALENTS = _load_equivalents()
+
+
+def _load_transliterations() -> dict[tuple[str, str], list[tuple[str, str]]]:
+    """(product, plain English name or native spelling) -> [(romanized, native)] for spellings like 约翰 / Джон."""
+    found: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    path = os.path.join(os.path.dirname(_THIS_DIR), 'datasets', 'transliterations.csv')
+    with open(path, encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            for key in (_plain(r['en']), _plain(r['native'])):
+                entries = found.setdefault((r['product'], key), [])
+                if (r['romanized'], r['native']) not in entries:
+                    entries.append((r['romanized'], r['native']))
+    return found
+
+
+_TRANSLITERATIONS = _load_transliterations()
 
 
 class InputType(Enum):
@@ -611,8 +631,8 @@ def get_similar_names(input_name, input_type, distance_dimension, gender, db_pat
         seen = set()
         unique = []
         for r in similar_names:
-            if r[0] not in seen:
-                seen.add(r[0])
+            if (r[0], r[6]) not in seen:
+                seen.add((r[0], r[6]))
                 unique.append(r)
         similar_names = unique[:10]
     else:
@@ -1309,6 +1329,7 @@ def _world_find(product: str, input_name: str):
         script_mismatches=script_mismatches,
         detected_input_types=_auto_detected_types(input_name, input_type, lang),
         mismatch_cta_links=mismatch_cta_links,
+        transliterations=_TRANSLITERATIONS.get((product, _plain(input_name)), [])[:3],
         product_urls=_product_urls(input_name),
         finder_path=PRODUCT_PATHS[product] + 'find',
         share_name_label=product.title(),
