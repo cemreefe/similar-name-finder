@@ -1,0 +1,505 @@
+name,gender,popularity,international_forms
+Александр,male,top,Alexander; Alessandro; Alejandro; Alex
+Татьяна,female,top,Tatiana; Tanya
+Валентина,female,top,Valentina; Valentine
+Николай,male,top,Nicholas; Nicolas; Niccolò; Klaus
+Владимир,male,top,Vladimir; Waldemar
+Елена,female,top,Helen; Hélène; Elena
+Мария,female,top,Maria; Mary; Marie
+Сергей,male,top,Sergio; Serge
+Алексей,male,top,Alexis; Alessio; Alexei
+Анна,female,top,Anna; Anne; Ana; Hannah
+Иван,male,top,John; Jean; Juan; Giovanni; Jan
+Ольга,female,top,Olga; Helga
+Виктор,male,top,Victor; Vittorio
+Галина,female,top,Galina
+Михаил,male,top,Michael; Michel; Miguel; Michele
+Наталья,female,top,Natalie; Natalia
+Анатолий,male,top,Anatoly; Anatole
+Нина,female,top,Nina
+Андрей,male,top,Andrew; André; Andrea; Anders
+Людмила,female,top,Ludmila
+Светлана,female,top,Svetlana
+Юрий,male,top,Yuri
+Дмитрий,male,top,Dmitri; Demetrio
+Ирина,female,top,Irene; Irina
+Василий,male,top,Basil; Basilio
+Екатерина,female,top,Catherine; Katherine; Caterina; Kate
+Евгений,male,top,Eugene; Eugène; Eugenio
+Надежда,female,top,Nadezhda; Nadia
+Анастасия,female,top,Anastasia; Anastasie
+Валерий,male,top,Valery; Valerio
+Любовь,female,top,Lyubov
+Павел,male,top,Paul; Paolo; Pablo
+Александра,female,top,Alexandra; Alessandra; Sandra
+Максим,male,top,Max; Maxim; Massimo; Maxime
+Вера,female,top,Vera
+Игорь,male,top,Igor
+Петр,male,top,
+Юлия,female,top,Julia; Julie; Giulia
+Лидия,female,top,Lydia; Lidia
+Олег,male,top,Oleg
+Вячеслав,male,top,Vyacheslav; Václav
+Тамара,female,top,Tamara
+Виталий,male,top,Vitaly; Vitale
+Марина,female,top,Marina; Marine
+Борис,male,top,Boris
+Виктория,female,top,Victoria; Vittoria
+Дарья,female,top,Daria; Darya
+Роман,male,top,Roman; Romain; Romano
+Константин,male,top,Constantine; Konstantin; Costantino
+Раиса,female,top,Raisa
+Зинаида,female,top,Zinaida
+Илья,male,top,Elijah; Elias; Elia
+Денис,male,top,Denis; Dennis
+Елизавета,female,top,Elizabeth; Élisabeth; Elisa; Lisa
+Геннадий,male,top,Gennady
+Евгения,female,top,Eugenia; Eugénie
+Лариса,female,top,Larisa
+Леонид,male,top,Leonid; Leonidas
+Артём,male,top,Artem; Artemio
+Зоя,female,top,Zoe; Zoé
+Антонина,female,top,Antonina; Antonia
+Никита,male,top,Nikita; Nikitas
+Валентин,male,top,Valentin; Valentino
+Ксения,female,top,Xenia; Ksenia
+Кирилл,male,top,Cyril; Cirillo
+Оксана,female,top,Oksana
+Владислав,male,top,Vladislav; Władysław
+Наталия,female,top,
+Егор,male,top,George; Jorge
+Полина,female,top,Pauline; Paulina
+Григорий,male,top,Gregory; Grégoire; Gregorio
+Клавдия,female,top,Claudia; Claude
+Антон,male,top,Anthony; Antoine; Antonio
+Вадим,male,top,Vadim
+Маргарита,female,top,Margaret; Marguerite; Margherita
+Валерия,female,top,Valeria; Valérie
+Федор,male,top,
+Руслан,male,top,Ruslan
+София,female,top,Sophia; Sophie; Sofia
+Даниил,male,top,Daniel; Danilo; Dan
+Евдокия,female,top,Eudokia
+Георгий,male,top,George; Georges; Jorge
+Кристина,female,top,Christina; Christine; Cristina
+Варвара,female,top,Barbara; Barbra
+Станислав,male,top,Stanislav; Stanisław
+Вероника,female,top,Veronica; Véronique
+Матвей,male,top,Matthew; Matteo; Mathias
+Арина,female,top,Arina
+Артем,male,top,
+Диана,female,top,Diana; Diane
+Степан,male,top,Stephen; Stefano; Étienne
+Лилия,female,top,Lily; Lilia
+Тимофей,male,top,Timothy; Timothée; Timoteo
+Алла,female,top,
+Алёна,female,top,Alyona
+Эдуард,male,top,Edward; Eduardo
+Яна,female,popular,Jana; Yana
+Ярослав,male,popular,Yaroslav; Jarosław
+Лев,male,popular,Leo; Leon; Leone
+Олеся,female,popular,Olesya
+Алиса,female,popular,Alice; Alicia; Alys
+Артур,male,popular,Arthur; Arturo
+Ульяна,female,popular,Juliana; Uliana
+Ангелина,female,popular,Angelina; Angela
+Аркадий,male,popular,Arkady
+Альбина,female,popular,
+Арсений,male,popular,Arseny; Arsenio
+Семен,male,popular,
+Таисия,female,popular,Thais
+Альберт,male,popular,Albert; Alberto
+Инна,female,popular,Inna
+Марк,male,popular,Mark; Marc; Marco; Markus
+Антонида,female,popular,
+Глеб,male,popular,Gleb
+Карина,female,popular,Karina; Carina
+Яков,male,popular,Jacob; James; Jakub; Giacomo
+Богдан,male,popular,Bogdan; Bohdan
+Роза,female,popular,Rose; Rosa
+Ева,female,popular,Eve; Eva
+Алена,female,popular,
+Алевтина,female,popular,Alevtina
+Семён,male,popular,Simon; Simone; Simeon
+Эльвира,female,popular,Elvira
+Василиса,female,popular,Vasilisa
+Давид,male,popular,David; Davide; Dawid
+Пелагея,female,popular,Pelagia
+Герман,male,popular,German; Hermann
+Кира,female,popular,Kira; Kyra
+Жанна,female,popular,Jeanne; Joan
+Захар,male,popular,Zachary; Zacharie
+Римма,female,popular,Rimma
+Фаина,female,popular,Faina
+Ираида,female,popular,
+Фёдор,male,popular,Theodore; Teodoro; Théo
+Макар,male,popular,Makar; Macario
+Прасковья,female,popular,Praskovya
+Савелий,male,popular,Saveliy
+Анжелика,female,popular,
+Вениамин,male,popular,Benjamin; Beniamino
+Дарина,female,popular,Darina
+Дина,female,popular,
+Мирон,male,popular,Miron; Myron
+Таиса,female,popular,
+Матрена,female,popular,
+Роберт,male,popular,Robert; Roberto
+Артемий,male,popular,Artemy
+Элина,female,popular,Elina
+Димитрий,male,popular,
+Серафима,female,popular,Seraphima
+Адам,male,popular,Adam; Adamo
+Эмилия,female,popular,Emilia; Emily; Émilie
+Пётр,male,popular,Peter; Pierre; Pedro; Pietro
+Регина,female,popular,Regina
+Арсен,male,popular,Arsen
+Злата,female,popular,Zlata
+Мирослава,female,popular,Miroslava
+Родион,male,popular,Rodion
+Филипп,male,popular,Philip; Philippe; Felipe; Filippo
+Всеволод,male,popular,Vsevolod
+Аделина,female,popular,Adeline; Adelina
+Виолетта,female,popular,Violetta; Violet
+Ефим,male,popular,Efim
+Майя,female,popular,Maya; Maia
+Анжела,female,popular,
+Святослав,male,popular,Svyatoslav
+Милена,female,popular,Milena
+Рудольф,male,popular,
+Эльмира,female,popular,
+Нелли,female,popular,Nelly
+Эвелина,female,popular,Evelyn; Eveline
+Есения,female,popular,Yesenia
+Платон,male,popular,Plato; Platone
+Клара,female,popular,Clara; Claire
+Афанасий,male,popular,Athanasius
+Эмма,female,popular,Emma
+Эмиль,male,popular,Emil; Émile; Emilio
+Луиза,female,popular,Louise; Luisa
+Августа,female,popular,
+Ян,male,popular,Jan; Yan
+Снежана,female,popular,Snezhana
+Серафим,male,popular,Seraphim; Serafino
+Камилла,female,popular,
+Тихон,male,popular,Tikhon
+Иосиф,male,popular,Joseph; José; Giuseppe
+Ростислав,male,popular,Rostislav
+Леонтий,male,popular,
+Лиана,female,popular,
+Демид,male,popular,Demid
+Сабина,female,popular,Sabina; Sabine
+Елисей,male,popular,Elisha; Eliseo
+Анфиса,female,popular,Anfisa
+Рафаэль,male,popular,Raphael; Rafael
+Ефросинья,female,popular,Euphrosyne
+Назар,male,popular,Nazar; Nazario
+Кузьма,male,popular,Kuzma; Cosimo
+Камила,female,popular,Camilla; Camille
+Рафаил,male,popular,
+Лия,female,popular,Leah; Lia
+Владислава,female,popular,Vladislava
+Мирослав,male,popular,Miroslav
+Иннокентий,male,popular,Innokenty; Innocenzo
+Марианна,female,popular,Marianna; Marianne
+Игнат,male,popular,Ignatius; Ignacio; Ignazio
+Эльза,female,popular,Elsa; Else
+Инга,female,popular,Inga; Inge
+Амелия,female,popular,
+Элеонора,female,popular,Eleanor; Eleonora
+Даниэль,male,popular,Daniel; Danielle
+Марьяна,female,popular,Maryana
+Акулина,female,popular,
+Ника,female,popular,Nika; Nike
+Генрих,male,popular,Henry; Heinrich; Henri
+Радмир,male,popular,
+Элла,female,popular,Ella
+Ярослава,female,popular,Yaroslava
+Амалия,female,popular,Amalia; Amelie
+Эрик,male,popular,Eric; Erik
+Алеся,female,popular,
+Стефания,female,popular,Stephanie; Stefania
+Инесса,female,popular,
+Демьян,male,popular,Demyan; Damian
+Агафья,female,popular,Agatha
+Каролина,female,popular,Caroline; Carolina
+Азалия,female,popular,Azalia
+Влада,female,popular,Vlada
+Гордей,male,popular,Gordey
+Ида,female,popular,Ida
+Агата,female,popular,Agatha; Agathe
+Мая,female,popular,
+Феликс,male,popular,Felix
+Феодор,male,popular,
+Митрофан,male,popular,Mitrofan
+Аграфена,female,popular,Agrafena
+Фекла,female,popular,
+Степанида,female,popular,
+Стефан,male,popular,Stefan; Stephan
+Прокопий,male,medium,
+Федосья,female,medium,
+Дария,female,medium,
+Анисья,female,medium,Anisya
+Розалия,female,medium,Rosalia; Rosalie
+Трофим,male,medium,Trofim
+Агафия,female,medium,
+Юлиана,female,medium,Juliana; Julianne
+Люция,female,medium,
+Гавриил,male,medium,Gabriel
+Агния,female,medium,Agnes; Agnese
+Неля,female,medium,
+Илона,female,medium,
+Валериан,male,medium,
+Октябрина,female,medium,
+Лада,female,medium,Lada
+Аким,male,medium,Akim; Joachim
+Тарас,male,medium,Taras
+Марта,female,medium,Martha; Marta
+Василина,female,medium,Vasilina
+Анисия,female,medium,
+Аксинья,female,medium,Aksinya
+Леон,male,medium,Leon; Léon
+Мира,female,medium,
+Никифор,male,medium,Nikifor
+Ася,female,medium,Asya
+Дана,female,medium,Dana
+Капитолина,female,medium,Kapitolina
+Савва,male,medium,Savva; Sabbas
+Лука,male,medium,Luke; Luca; Lucas
+Виталина,female,medium,Vitalina
+Рената,female,medium,Renata; Renée
+Арсентий,male,medium,
+Игнатий,male,medium,
+Адель,male,medium,
+Клим,male,medium,Clement; Clemente
+Нонна,female,medium,Nonna
+Ирма,female,medium,Irma
+Любава,female,medium,Lyubava
+Сара,female,medium,Sarah; Sara
+Юлий,male,medium,Julius; Giulio
+Ефросиния,female,medium,
+Глафира,female,medium,Glafira
+Фрида,female,medium,
+Ратмир,male,medium,Ratmir
+Прохор,male,medium,Prokhor
+Нинель,female,medium,
+Федора,female,medium,
+Ия,female,medium,Ia
+Васса,female,medium,
+Лаура,female,medium,
+Земфира,female,medium,
+Лукерья,female,medium,Glykeria
+Янина,female,medium,
+Домна,female,medium,
+Владилен,male,medium,
+Альвина,female,medium,
+Нелля,female,medium,
+Павла,female,medium,
+Фридрих,male,medium,
+Архип,male,medium,Arkhip
+Устинья,female,medium,Justina
+Мила,female,medium,Mila
+Муза,female,medium,
+Бронислав,male,medium,
+Эрна,female,medium,
+Моисей,male,medium,
+Евангелина,female,medium,Evangeline
+Изабелла,female,medium,
+Герасим,male,medium,
+Абрам,male,medium,
+Христина,female,medium,
+Аврора,female,medium,Aurora; Aurore
+Валерьян,male,medium,
+Мелания,female,medium,Melanie; Melania
+Рада,female,medium,Rada
+Белла,female,medium,Bella; Belle
+Лаврентий,male,medium,Lawrence; Lorenzo; Laurent
+Вольдемар,male,medium,
+Параскева,female,medium,
+Лилиана,female,medium,
+Давыд,male,medium,
+Станислава,female,medium,
+Авдотья,female,medium,
+Гурий,male,medium,
+Радмила,female,medium,
+Василь,male,medium,
+Лира,female,medium,
+Эрика,female,medium,Erika; Erica
+Сусанна,female,medium,Susanna; Susan; Suzanne
+Климентий,male,medium,
+Емельян,male,medium,Emelyan; Emiliano
+Феодосия,female,medium,
+Викентий,male,medium,Vincent; Vincenzo
+Владлена,female,medium,
+Илларион,male,medium,Hilarion
+Федот,male,medium,
+Яромир,male,medium,Jaromír
+Лазарь,male,medium,
+Маруся,female,medium,
+Зиновий,male,medium,Zinovy
+Радион,male,medium,
+Адель,female,medium,
+Осип,male,medium,Osip
+Ананий,male,medium,
+Берта,female,medium,
+Зиновия,female,medium,
+Евдоким,male,medium,Evdokim
+Терентий,male,medium,Terenty; Terence
+Лолита,female,medium,
+Олимпиада,female,medium,
+Прокофий,male,medium,
+Август,male,medium,
+Пантелей,male,medium,Panteley
+Ариадна,female,medium,Ariadne; Arianna
+Ада,female,medium,
+Лана,female,medium,Lana
+Самуил,male,medium,
+Иоанн,male,medium,
+Спиридон,male,medium,
+Петра,male,medium,
+Маина,female,medium,
+Аэлита,female,medium,Aelita
+Калерия,female,medium,Kaleria
+Неонила,female,medium,
+Афина,female,medium,
+Венедикт,male,medium,
+Клавдий,male,medium,
+Аглая,female,rare,Aglaia
+Никандр,male,rare,Nikandr
+Сюзанна,female,rare,
+Поликарп,male,rare,
+Ефимия,female,rare,
+Юлианна,female,rare,
+Фрол,male,rare,Frol
+Богдана,female,rare,Bogdana
+Ефрем,male,rare,Ephraim
+Евсей,male,rare,Eusebius
+Наум,male,rare,Nahum
+Сарра,female,rare,
+Фома,male,rare,Thomas; Tomás; Tommaso
+Мальвина,female,rare,
+Агриппина,female,rare,
+Радима,female,rare,
+Андриан,male,rare,
+Лея,female,rare,Leah; Leia
+Никола,male,rare,
+Севастьян,male,rare,Sebastian; Sébastien
+Авенир,male,rare,
+Евстолия,female,rare,
+Добрыня,male,rare,Dobrynya
+Нил,male,rare,Nil; Neil
+Карп,male,rare,
+Юлиан,male,rare,Julian; Julien
+Розалина,female,rare,
+Евстафий,male,rare,
+Светослав,male,rare,
+Анисим,male,rare,
+Влас,male,rare,Vlas; Blaise
+Анжелина,female,rare,
+Феоктиста,female,rare,
+Соломон,male,rare,
+Вита,female,rare,
+Дарьяна,female,rare,
+Исаак,male,rare,
+Магдалина,female,rare,Magdalena; Madeleine
+Илия,male,rare,
+Бэла,female,rare,
+Сидор,male,rare,
+Харитон,male,rare,Khariton
+Еремей,male,rare,Jeremiah; Jeremy
+Милослава,female,rare,
+Максимилиан,male,rare,Maximilian; Massimiliano
+Леля,female,rare,
+Аполлинария,female,rare,Apollinaria
+Теодор,male,rare,Theodore; Theo
+Мирра,female,rare,Myrrha
+Елизар,male,rare,Eleazar
+Златослава,female,rare,
+Адриан,male,rare,Adrian; Adrien; Adriano
+Гайса,male,rare,
+Мефодий,male,rare,
+Агнесса,female,rare,Agnes; Agnès
+Никон,male,rare,
+Улита,female,rare,
+Милан,male,rare,Milan
+Радислав,male,rare,
+Христофор,male,rare,
+Феодора,female,rare,Theodora; Dora
+Руфия,female,rare,
+Арон,male,rare,
+Иванна,female,rare,
+Лукьян,male,rare,Lucian; Luciano
+Пантелеймон,male,rare,
+Капитон,male,rare,
+Маня,female,rare,
+Фадей,male,rare,Thaddeus; Tadeo
+Милания,female,rare,
+Алексий,male,rare,
+Адриана,female,rare,
+Остап,male,rare,Ostap
+Корней,male,rare,Cornelius; Corneille
+Феня,female,rare,
+Маланья,female,rare,
+Анета,female,rare,
+Бронислава,female,rare,Bronislava
+Ермолай,male,rare,Ermolay
+Симон,male,rare,
+Евлампия,female,rare,
+Кондратий,male,rare,
+Ядвига,female,rare,
+Флора,female,rare,Flora; Fleur
+Феодосий,male,rare,
+Матрона,female,rare,
+Нелла,female,rare,
+Ларион,male,rare,
+Зита,female,rare,
+Михей,male,rare,
+Леонора,female,rare,
+Рахиль,female,rare,
+Александрина,female,rare,
+Дементий,male,rare,
+Миланья,female,rare,
+Викторина,female,rare,
+Аделаида,female,rare,Adelaide; Adélaïde
+Илария,female,rare,Hilaria; Ilaria
+Жанетта,female,rare,
+Матрёна,female,rare,Matryona
+Антоний,male,rare,
+Самсон,male,rare,
+Стефанида,female,rare,
+Порфирий,male,rare,Porfiry
+Борислав,male,rare,
+Модест,male,rare,Modest; Modesto
+Виссарион,male,rare,
+Ярославна,female,rare,
+Трифон,male,rare,
+Филимон,male,rare,Philemon
+Харитина,female,rare,
+Эрвин,male,rare,
+Маркел,male,rare,
+Радим,male,rare,
+Казимир,male,rare,Casimir; Kazimierz
+Юстина,female,rare,
+Ювеналий,male,rare,
+Аристарх,male,rare,Aristarkh
+Алексия,female,rare,
+Лара,female,rare,
+Афанасия,female,rare,
+Макарий,male,rare,
+Ванда,female,rare,
+Елисавета,female,rare,
+Мираслава,female,rare,
+Леся,female,rare,
+Гера,female,rare,
+Потап,male,rare,Potap
+Кондрат,male,rare,
+Милица,female,rare,
+Эллада,female,rare,
+Феоктист,male,rare,
+Градислава,female,rare,
+Мстислав,male,rare,
+Марика,female,rare,
+Устин,male,rare,Justin
+Феврония,female,rare,
+Ерофей,male,rare,Erofey
+Нестор,male,rare,Nestor
+Натан,male,rare,Nathan; Natan

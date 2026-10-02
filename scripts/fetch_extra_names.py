@@ -1,25 +1,28 @@
 """Download supplementary name lists into datasets/.
 
 - ine_spanish.csv: INE Spain, names held by >= 20 residents (CC BY 4.0, "Fuente: INE").
-- wiktionary_russian.csv: ru.wiktionary "* мужские/женские имена/ru" categories (CC BY-SA 4.0).
-- cedict_chinese.csv: Western given names and their Chinese spelling from CC-CEDICT (CC BY-SA 4.0).
+- nen_russian.csv: NEN names dataset (Moscow ZAGS newborn statistics, curated; CC BY 4.0), restricted to names
+  of the Russian tradition (see RUSSIAN_ORIGINS / RUSSIAN_EXTRA / RUSSIAN_EXCLUDED).
+- cngender_chinese.csv: given names of mainland Chinese residents with male/female counts, from
+  "An Open Dataset of Chinese Name-to-Gender Associations" (Harvard Dataverse, CC0 1.0).
+- cedict_chinese.csv: Western given names and their Chinese spelling from CC-CEDICT (CC BY-SA 4.0); shown only as a
+  transliteration, never scored as a Chinese name.
 
-Usage: python scripts/fetch_extra_names.py [spanish russian chinese]   (needs xlrd for spanish)
+Usage: python scripts/fetch_extra_names.py [spanish russian chinese cedict]   (needs xlrd for spanish)
 """
 import csv
 import gzip
 import io
-import json
 import re
 import sys
 import time
-import urllib.parse
 import urllib.request
 from collections import Counter
 
 USER_AGENT = 'namefinder-dataset-builder/1.0 (https://namefinder.dutl.uk; cemreefe@gmail.com)'
 INE_URL = 'https://www.ine.es/daco/daco42/nombyapel/nombres_por_edad_media.xls'
-WIKTIONARY_API = 'https://ru.wiktionary.org/w/api.php'
+NEN_URL = 'https://raw.githubusercontent.com/mdanina/nen-imena-dataset/main/data/names.csv'
+CNGENDER_URL = 'https://dataverse.harvard.edu/api/access/datafile/10803450'
 CEDICT_URL = 'https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz'
 
 
@@ -56,34 +59,65 @@ def fetch_spanish() -> None:
     _write('datasets/ine_spanish.csv', ['name', 'gender', 'frequency'], rows)
 
 
-def _category_members(title: str) -> list[str]:
-    names, cont = [], {}
-    while True:
-        params = {'action': 'query', 'list': 'categorymembers', 'cmtitle': title, 'cmlimit': '500',
-                  'cmnamespace': '0', 'format': 'json', **cont}
-        data = json.loads(_get(WIKTIONARY_API + '?' + urllib.parse.urlencode(params)))
-        names += [m['title'] for m in data['query']['categorymembers']]
-        if 'continue' not in data:
-            return names
-        cont = {'cmcontinue': data['continue']['cmcontinue']}
-        time.sleep(0.2)
+# NEN's "origin" field: origins of the Russian/Orthodox/European name stock. Names of Arabic, Turkic, Caucasian,
+# Central Asian and Mongolian origin (Магомед, Анзор, Азамат, ...) are left out.
+RUSSIAN_ORIGINS = {
+    'древнегреческое', 'греческое', 'латинское', 'древнеримское', 'славянское', 'древнерусское',
+    'греческо-славянское', 'древнееврейское', 'германское', 'скандинавское', 'французское', 'английское',
+    'кельтское', 'древнеанглийское', 'польское', 'литературное', 'провансальское', 'древнеарамейское',
+}
+# Russian names whose NEN origin label is outside RUSSIAN_ORIGINS (or mislabeled, e.g. 'римское').
+RUSSIAN_EXTRA = {
+    'Дарья', 'Нина', 'Алла', 'Руслан', 'Анжелика', 'Августа', 'Август', 'Берта', 'Матрона', 'Стефанида',
+    'Александрина', 'Марика', 'Ярославна', 'Мстислав', 'Марта', 'Савва', 'Фома', 'Абрам', 'Моисей', 'Сарра',
+    'Янина', 'Илия', 'Михей', 'Маркел', 'Давыд', 'Лазарь', 'Соломон', 'Рахиль', 'Изабелла', 'Лолита', 'Фрида',
+    'Эрвин',
+}
+# Tatar, Bashkir, Caucasian and Central Asian names that NEN files under a European origin.
+RUSSIAN_EXCLUDED = {
+    'Марьям', 'Альфия', 'Хава', 'Фания', 'Аниса', 'Тигран', 'Линар', 'Сослан', 'Инсаф', 'Альфира', 'Рузанна',
+    'Сармат', 'Линара', 'Геворг', 'Миран', 'Мариян', 'Амур', 'Исмаил', 'Рим', 'Зайтуна', 'Харис', 'Наида',
+    'Ралина', 'Микаил', 'Разина', 'Динис', 'Гаянэ', 'Филюс', 'Галей', 'Севиль', 'Фидания', 'Ринат', 'Радик',
+    'Ренат', 'Марсель', 'Румия', 'Сервер', 'Адия', 'Салия', 'Риналь', 'Нино', 'Диас', 'Венер', 'Резеда', 'Анзор',
+    'Замира', 'Василя', 'Радис', 'Ильвина', 'Гульниса', 'Дамира', 'Тамила', 'Равиль', 'Самвел', 'Яха', 'Исрапил',
+    'Ленар', 'Ленара', 'Мариам', 'Гусен', 'Гумер', 'Апти', 'Ирик', 'Радель', 'Эндже', 'Ранэль', 'Алексан',
+    'Ания', 'Эра', 'Дари', 'Анфия', 'Нана', 'Нила', 'Дим', 'Илина', 'Флорида', 'Марс', 'Венера', 'Мариана',
+}
+# Recent Western borrowings rather than Russian names.
+RUSSIAN_EXCLUDED |= {
+    'Дженнет', 'Эмили', 'Рианна', 'Риана', 'Даяна', 'Николь', 'Оливия', 'Мелисса', 'Ванесса', 'Лили', 'Алисия',
+    'Мишель', 'Элиза', 'Анита', 'Лора', 'Мия', 'Ариана', 'Арианна', 'Теона', 'Алиана', 'Амилия', 'Аурика',
+    'Максалина', 'Мари', 'Грант', 'Ричард', 'Гарик', 'Эдвард', 'Джульетта', 'Сабрина', 'Стелла', 'Моника',
+    'Тереза', 'Доминика', 'Доминик', 'Кристиан', 'Лео', 'Алекс', 'Алек', 'Рамир', 'Айвар', 'Виль', 'Вилен',
+    'Орлан', 'Фина', 'Фая', 'Эльвин', 'Даниэла', 'Паулина', 'Рауль', 'Отто', 'Франц', 'Вальтер', 'Людвиг',
+    'Геральд', 'Георг', 'Янис', 'Эрнст', 'Генриетта', 'Гертруда', 'Дагмара', 'Рида', 'Лола', 'Мартин', 'Алана',
+    'Леонард', 'Эрнест', 'Арнольд', 'Альфред', 'Эдгар', 'Оскар', 'Эвальд', 'Изольда', 'Адольф', 'Вильгельм',
+}
 
-
-def _name_categories(word: str) -> list[str]:
-    params = {'action': 'query', 'list': 'search', 'srnamespace': '14', 'srlimit': '500',
-              'srsearch': f'intitle:"{word} имена/ru"', 'format': 'json'}
-    data = json.loads(_get(WIKTIONARY_API + '?' + urllib.parse.urlencode(params)))
-    return sorted(m['title'] for m in data['query']['search'] if m['title'].lower().endswith(f'{word} имена/ru'))
+# Given names held by fewer people are mostly one-off combinations.
+CNGENDER_MIN_COUNT = 500
 
 
 def fetch_russian() -> None:
     rows = []
-    for word, gender in (('мужские', 'male'), ('женские', 'female')):
-        names = set()
-        for title in _name_categories(word):
-            names.update(_category_members(title))
-        rows += [(n, gender) for n in sorted(names)]
-    _write('datasets/wiktionary_russian.csv', ['name', 'gender'], rows)
+    for r in csv.DictReader(io.StringIO(_get(NEN_URL).decode('utf-8-sig'))):
+        name = r['name'].strip()
+        if name in RUSSIAN_EXCLUDED or (r['origin'] not in RUSSIAN_ORIGINS and name not in RUSSIAN_EXTRA):
+            continue
+        rows.append((name, {'m': 'male', 'f': 'female'}[r['gender']], r['popularity_bucket'], r['international_forms']))
+    _write('datasets/nen_russian.csv', ['name', 'gender', 'popularity', 'international_forms'], rows)
+
+
+def fetch_chinese_given_names() -> None:
+    rows = []
+    lines = _get(CNGENDER_URL).decode('utf-8').splitlines()
+    for line in lines[1:]:
+        name, male, female, _ = line.split('\t')
+        male, female = int(float(male or 0)), int(float(female or 0))
+        if male + female >= CNGENDER_MIN_COUNT and all('\u4e00' <= c <= '\u9fff' for c in name):
+            rows.append((name, male, female))
+    rows.sort(key=lambda r: -(r[1] + r[2]))
+    _write('datasets/cngender_chinese.csv', ['name', 'male', 'female'], rows)
 
 
 _NAME_ENTRY = re.compile(r'^\S+ (\S+) \[[^]]+\] /(?:\(name\) )?([A-Z][a-z]+)(?: \((?:name|given name|male given name|female given name)\))?/')
@@ -113,6 +147,7 @@ def fetch_chinese() -> None:
 
 
 if __name__ == '__main__':
-    fetchers = {'spanish': fetch_spanish, 'russian': fetch_russian, 'chinese': fetch_chinese}
+    fetchers = {'spanish': fetch_spanish, 'russian': fetch_russian, 'chinese': fetch_chinese_given_names,
+                'cedict': fetch_chinese}
     for product in sys.argv[1:] or fetchers:
         fetchers[product]()

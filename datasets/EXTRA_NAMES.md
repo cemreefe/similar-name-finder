@@ -1,17 +1,25 @@
 # Supplementary name lists
 
-These lists fill gaps in the Wikidata exports (see `WIKIDATA_NAMES.md`). Regenerate with
+These lists are the Chinese and Russian name lists and fill gaps in the Spanish Wikidata export (see `WIKIDATA_NAMES.md`). Regenerate with
 `python scripts/fetch_extra_names.py` (the Spanish list needs `pip install xlrd`), then rebuild the
 databases with `python preprocessing.py`. Downloaded 2026-09-30.
 
 | File | Source | Licence | Used for |
 | --- | --- | --- | --- |
-| `cedict_chinese.csv` | [CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cc-cedict): entries marked "(name)" plus the most common first-name spelling in "First·Last" person entries | CC BY-SA 4.0 | Standard Chinese spellings of Western names (John → 约翰, David → 大卫). Only names that exist in the English list are used; gender comes from Wikidata when it has the name, otherwise from the English list. Results show Hanzi + Pinyin, not the English name. |
+| `cngender_chinese.csv` | [An Open Dataset of Chinese Name-to-Gender Associations](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/UAARYY) (Harvard Dataverse, `CnGender.txt`; [GitHub](https://github.com/tongt1213/Chinese-Gender-dataset)): given names of Chinese residents with male/female counts | CC0 1.0 | Chinese finder. Given names held by >= 500 people (about 8,000). Shown as tone-marked Pinyin + Hanzi and matched by their Pinyin sound; gender is male/female when >= 80% of holders are, otherwise both. |
+| `nen_russian.csv` | [NEN names dataset](https://github.com/mdanina/nen-imena-dataset) (popularity from open Moscow ZAGS newborn statistics, curated by the NEN editorial team) | CC BY 4.0 — © NEN, https://github.com/mdanina/nen-imena-dataset | Russian finder. Only names of the Russian / Orthodox / European name stock (about 500): Arabic, Turkic, Caucasian, Central Asian and Mongolian names and recent Western borrowings (Дженнет, Эмили) are left out; see `RUSSIAN_ORIGINS`, `RUSSIAN_EXTRA` and `RUSSIAN_EXCLUDED` in `scripts/fetch_extra_names.py`. Its `international_forms` (Иван: John; Jean; Juan) rank Иван first for John. |
+| `cedict_chinese.csv` | [CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cc-cedict): entries marked "(name)" plus the most common first-name spelling in "First·Last" person entries | CC BY-SA 4.0 | Chinese spellings of Western names (John → 约翰). If the spelling is itself a Chinese given name (大卫), it ranks first; otherwise it is only shown as a transliteration (see below). |
 | `ine_spanish.csv` | [INE, Estadística de nombres](https://www.ine.es/dyngs/INEbase/es/operacion.htm?c=Estadistica_C&menu=resultados&secc=1254736195498&idp=1254734710990) (`nombres_por_edad_media.xls`): names of residents of Spain held by at least 20 people | CC BY 4.0 — Fuente: Instituto Nacional de Estadística | Spanish finder. Single-word names with frequency >= 500; accents are restored from Wikidata where known. |
-| `wiktionary_russian.csv` | [Russian Wiktionary](https://ru.wiktionary.org/) categories ending in "мужские имена/ru" / "женские имена/ru" | CC BY-SA 4.0 | Russian finder: Cyrillic names, including Russian spellings of foreign names (Джон, Эмма). |
 
-Because CC-CEDICT and Wiktionary are CC BY-SA 4.0, `chinese_database.db`, `russian_database.db`
-and the two CSVs derived from them are shared under CC BY-SA 4.0 as well.
+`datasets/transliterations.csv` (and the transliteration boxes built from it) derives from CC-CEDICT and is shared under
+CC BY-SA 4.0. The name databases themselves contain no CC-CEDICT data.
+
+## Transliterations
+
+Spellings of English names in Chinese, Russian or Japanese script (John → 约翰 / Джон / ジョン) that are not names of
+that language are kept out of the scored results. `preprocessing.create_transliterations` collects them from CC-CEDICT
+and the Wikidata `label` rows of `name_equivalents.csv` into `datasets/transliterations.csv`; a finder shows them as gold
+cards labelled "Transliteration, not a native name" above the results only when the input is exactly the English name or the spelling.
 
 ## English → local name equivalents
 
@@ -24,5 +32,6 @@ the (also real, INE-listed) spelling Michael. Two sources:
 - `label`: target-language labels of Wikidata given-name items whose English label is the name (John → Джон,
   Michael → Miguel/Майкл), CC0. "Said to be the same as" (P460) links were too loose (John → Yann, Jackie) and are not used.
 
-On the Chinese finder the CC-CEDICT mapping is used as the top-tier equivalent. At query time, results matching a
+On the Chinese finder CC-CEDICT, and on the Russian finder NEN's international forms, are top-tier equivalents. They
+only affect names that are in the destination list. At query time, results matching a
 `manual`/CC-CEDICT equivalent rank first, then `label` equivalents, then an exact spelling match, then phonetic score.

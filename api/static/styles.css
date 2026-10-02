@@ -1013,3 +1013,24 @@ body.korean-theme .advanced-toggle.on {
     font-size: 0.85rem;
     opacity: 0.7;
 }
+
+.name-item.transliteration {
+    background: #fffbeb;
+    border-color: #d4a017;
+}
+
+.name-item.transliteration:hover {
+    border-color: #b8860b;
+}
+
+.transliteration-label {
+    display: block;
+    width: fit-content;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #92400e;
+    background: #fde68a;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+}

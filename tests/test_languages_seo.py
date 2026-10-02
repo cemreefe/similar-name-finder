@@ -244,7 +244,7 @@ WORLD_EXPECTATIONS = [
 ]
 
 
-@pytest.mark.parametrize("product,minimum", [("chinese", 10000), ("spanish", 3000), ("russian", 20000)])
+@pytest.mark.parametrize("product,minimum", [("chinese", 8000), ("spanish", 3000), ("russian", 500)])
 def test_supplemented_world_databases_are_large(product, minimum):
     conn = sqlite3.connect(_WORLD_DB_PATHS[product])
     assert conn.execute("SELECT COUNT(*) FROM names").fetchone()[0] >= minimum
@@ -257,15 +257,42 @@ def test_hanzi_to_pinyin(hanzi, expected):
 
 
 def test_chinese_results_show_pinyin_not_english(client):
-    html = client.get("/my-name-in-chinese/find/John").get_data(as_text=True)
-    assert "Yuēhàn" in html
+    html = client.get("/my-name-in-chinese/find/Jianguo").get_data(as_text=True)
+    assert "Jiànguó" in html
     conn = sqlite3.connect(_WORLD_DB_PATHS["chinese"])
-    assert conn.execute("SELECT name FROM names WHERE original_writing = '约翰'").fetchone()[0] == "Yuēhàn"
+    assert conn.execute("SELECT name FROM names WHERE original_writing = '建国'").fetchone()[0] == "Jiànguó"
     assert conn.execute("SELECT COUNT(*) FROM names WHERE name = 'John'").fetchone()[0] == 0
     conn.close()
 
 
-@pytest.mark.parametrize("query,hanzi", [("Yuehan", "约翰"), ("Maikeer", "迈克尔")])
+@pytest.mark.parametrize("product,native", [
+    ("chinese", "约翰"), ("chinese", "雅尔马里"), ("chinese", "迈克尔"),
+    ("russian", "Джон"), ("russian", "Магомед"), ("russian", "Анзор"), ("russian", "Азамат"), ("russian", "Дженнет"),
+])
+def test_foreign_and_regional_names_are_not_in_native_lists(product, native):
+    conn = sqlite3.connect(_WORLD_DB_PATHS[product])
+    assert conn.execute("SELECT COUNT(*) FROM names WHERE original_writing = ?", (native,)).fetchone()[0] == 0
+    conn.close()
+
+
+@pytest.mark.parametrize("product,query,native", [
+    ("chinese", "John", "约翰"), ("chinese", "Michael", "迈克尔"), ("russian", "John", "Джон"), ("russian", "Джон", "Джон"),
+])
+def test_transliteration_shown_only_outside_results(client, product, query, native):
+    html = client.get(f"/my-name-in-{product}/find/{quote(query, safe='')}").get_data(as_text=True)
+    cards = re.findall(r'<li class="name-item( transliteration)?">\s*<span class="name">[^<]*<span class="original-writing"[^>]*>([^<]+)<', html)
+    assert ("", native) not in cards
+    assert (" transliteration", native) in cards
+    assert cards[0][0] == " transliteration"
+
+
+def test_no_transliteration_without_exact_match(client):
+    html = client.get("/my-name-in-chinese/find/Jalmari").get_data(as_text=True)
+    assert "name-item transliteration" not in html
+    assert "雅尔马里" not in html
+
+
+@pytest.mark.parametrize("query,hanzi", [("Jianguo", "建国"), ("Jianmin", "建民")])
 def test_toneless_pinyin_finds_chinese_name_first(client, query, hanzi):
     html = client.get(f"/my-name-in-chinese/find/{query}").get_data(as_text=True)
     assert re.findall(r'original-writing[^>]*>([^<]+)<', html)[0] == hanzi
@@ -273,7 +300,7 @@ def test_toneless_pinyin_finds_chinese_name_first(client, query, hanzi):
 
 @pytest.mark.parametrize("product,query,expected", [
     ("spanish", "Michael", "Miguel"), ("spanish", "John", "Juan"), ("spanish", "Laura", "Laura"),
-    ("russian", "John", "Джон"), ("chinese", "John", "约翰"),
+    ("russian", "John", "Иван"), ("russian", "Michael", "Михаил"), ("chinese", "David", "大卫"),
 ])
 def test_local_equivalent_ranks_first(product, query, expected):
     results, _ = get_similar_names(query, "auto", "sound", "", db_path=_WORLD_DB_PATHS[product], product=product)
@@ -282,7 +309,7 @@ def test_local_equivalent_ranks_first(product, query, expected):
 
 def test_exact_spelling_match_ranks_first(client):
     html = client.get("/my-name-in-russian/find/Emma").get_data(as_text=True)
-    assert html.index("Эмма") < html.index("Эме")
+    assert re.findall(r'original-writing[^>]*>([^<]+)<', html)[0] == "Эмма"
 
 
 @pytest.mark.parametrize("product,query,expected", WORLD_EXPECTATIONS)

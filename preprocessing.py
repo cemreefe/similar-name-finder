@@ -304,9 +304,6 @@ _WIKIDATA_SCRIPTS = {
     'russian': lambda c: '\u0400' <= c <= '\u04ff',
 }
 
-_ZH_LABEL_PRIORITY = {'zh-hans': 0, 'zh-cn': 1, 'zh': 2}
-
-
 def _is_latin_name(text: str) -> bool:
     return bool(text) and all(c.isalpha() and ord(c) < 0x250 or c in "-'" for c in text)
 
@@ -338,12 +335,6 @@ def _wikidata_row(product: str, row: dict) -> tuple[str, str | None, NameRepr] |
         if not _is_latin_name(name):
             return None
         return name, None, _encode(name, InputType.SPANISH)
-    if product == 'russian':
-        native = native or row['ru'].strip()
-        if not _in_script('russian', native):
-            return None
-        name = en if _is_latin_name(en) else _cyrillic_to_latin(native).title()
-        return name, native, _encode(native, InputType.RUSSIAN)
     if not _in_script(product, native):
         return None
     if product == 'japanese':
@@ -353,29 +344,16 @@ def _wikidata_row(product: str, row: dict) -> tuple[str, str | None, NameRepr] |
         return name, native, _encode(mhelp.strip_accents(name), InputType.JAPANESE)
     if not _is_latin_name(en):
         return None
-    if product == 'chinese':
-        return _hanzi_to_pinyin(native), native, _encode(en, InputType.ENGLISH)
     return en, native, _encode(en, InputType.ENGLISH)
 
 
 _SUPPLEMENTARY_CSVS = {
-    'chinese': 'datasets/cedict_chinese.csv',
     'spanish': 'datasets/ine_spanish.csv',
-    'russian': 'datasets/wiktionary_russian.csv',
 }
 
 
 # INE lists every name held by >= 20 people; rare spellings (Maiquel, Maycol) crowd out equivalents like Miguel.
 _INE_MIN_FREQUENCY = 500
-
-
-def _english_genders(db_file='names_database.db') -> dict[str, str]:
-    conn = sqlite3.connect(db_file)
-    found = {}
-    for name, gender in conn.execute("SELECT name, gender FROM names WHERE gender IN ('boy', 'girl')"):
-        found.setdefault(name.lower(), set()).add(gender)
-    conn.close()
-    return {n: 'unisex' if len(g) > 1 else {'boy': 'male', 'girl': 'female'}[g.pop()] for n, g in found.items()}
 
 
 def _supplementary_rows(product: str, wikidata_rows: list[dict]) -> list[dict]:
@@ -386,26 +364,113 @@ def _supplementary_rows(product: str, wikidata_rows: list[dict]) -> list[dict]:
     with open(path, encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
     out = []
-    if product == 'chinese':
-        genders = _english_genders()
-        genders.update({r['en'].lower(): r['gender'] for r in wikidata_rows if r['en']})
-        for r in rows:
-            if r['en'].lower() in genders:
-                out.append({'qid': '', 'gender': genders[r['en'].lower()], 'native': r['zh'],
-                            'native_lang': 'zh-hans', 'ru': '', 'en': r['en']})
-    elif product == 'spanish':
-        accented = {mhelp.strip_accents(r['native']).lower(): r['native'] for r in wikidata_rows if r['native']}
-        for r in rows:
-            if int(r['frequency']) < _INE_MIN_FREQUENCY:
-                continue
-            key = r['name'].lower()
-            out.append({'qid': '', 'gender': r['gender'], 'native': accented.get(key, key.title()),
-                        'native_lang': 'es', 'ru': '', 'en': ''})
-    elif product == 'russian':
-        for r in rows:
-            out.append({'qid': '', 'gender': r['gender'], 'native': r['name'], 'native_lang': 'ru',
-                        'ru': r['name'], 'en': ''})
+    accented = {mhelp.strip_accents(r['native']).lower(): r['native'] for r in wikidata_rows if r['native']}
+    for r in rows:
+        if int(r['frequency']) < _INE_MIN_FREQUENCY:
+            continue
+        key = r['name'].lower()
+        out.append({'qid': '', 'gender': r['gender'], 'native': accented.get(key, key.title()),
+                    'native_lang': 'es', 'ru': '', 'en': ''})
     return out
+
+
+def _create_names_table(db_file: str) -> sqlite3.Connection:
+    if os.path.exists(db_file):
+        os.remove(db_file)
+    conn = sqlite3.connect(db_file)
+    conn.execute('''CREATE TABLE names (
+                        name TEXT,
+                        gender TEXT,
+                        phonetic_representation TEXT,
+                        ipa_transcription TEXT,
+                        ipa_alternatives TEXT,
+                        original_writing TEXT,
+                        PRIMARY KEY (name, gender, original_writing)
+                    )''')
+    return conn
+
+
+def _insert_native(conn: sqlite3.Connection, name: str, genders, enc: NameRepr, original: str) -> None:
+    for gender in genders:
+        conn.execute(
+            '''INSERT OR IGNORE INTO names (name, gender, phonetic_representation, ipa_transcription, ipa_alternatives, original_writing)
+               VALUES (?, ?, ?, ?, ?, ?)''',
+            (name, gender, enc.mp, enc.ipa, '', original),
+        )
+
+
+# Share of male holders above which a Chinese given name counts as male (below 1 - this: female).
+_ZH_GENDER_SHARE = 0.8
+
+
+def create_chinese_database(csv_file='datasets/cngender_chinese.csv', db_file='chinese_database.db'):
+    """Given names of Chinese residents (CnGender, CC0), shown as Pinyin + Hanzi and matched by their Pinyin sound."""
+    with open(csv_file, encoding='utf-8') as f:
+        rows = list(csv.DictReader(f))
+    conn = _create_names_table(db_file)
+    for r in tqdm(rows, desc='Processing chinese names'):
+        hanzi = r['name']
+        male, female = int(r['male']), int(r['female'])
+        share = male / (male + female)
+        genders = ('boy',) if share >= _ZH_GENDER_SHARE else ('girl',) if share <= 1 - _ZH_GENDER_SHARE else ('boy', 'girl')
+        enc = _encode(hanzi, InputType.CHINESE)
+        if enc.mp or enc.ipa:
+            _insert_native(conn, _hanzi_to_pinyin(hanzi), genders, enc, hanzi)
+    conn.commit()
+    conn.close()
+
+
+def create_russian_database(csv_file='datasets/nen_russian.csv', db_file='russian_database.db'):
+    """Names given in Russia (NEN, CC BY 4.0), shown as Cyrillic + transliteration and matched by their Russian sound."""
+    with open(csv_file, encoding='utf-8') as f:
+        rows = list(csv.DictReader(f))
+    conn = _create_names_table(db_file)
+    for r in tqdm(rows, desc='Processing russian names'):
+        native = r['name']
+        enc = _encode(native, InputType.RUSSIAN)
+        if enc.mp or enc.ipa:
+            _insert_native(conn, _cyrillic_to_latin(native).title(), ({'male': 'boy', 'female': 'girl'}[r['gender']],), enc, native)
+    conn.commit()
+    conn.close()
+
+
+def _romanize(product: str, native: str) -> str | None:
+    if product == 'chinese':
+        return _hanzi_to_pinyin(native) if _in_script('chinese', native) else None
+    if product == 'russian':
+        return _cyrillic_to_latin(native).title() if _in_script('russian', native) else None
+    if product == 'japanese':
+        return (_japanese_to_romaji(native) or '').title() or None
+    return None
+
+
+def create_transliterations(out_file='datasets/transliterations.csv'):
+    """Spellings of English names in a destination script (John -> 约翰, Джон, ジョン) that aren't names of that
+    language. They are shown only for an exact match, never scored with the native names."""
+    pairs = []
+    with open('datasets/cedict_chinese.csv', encoding='utf-8') as f:
+        pairs += [('chinese', r['en'], r['zh']) for r in csv.DictReader(f)]
+    with open('datasets/name_equivalents.csv', encoding='utf-8') as f:
+        pairs += [(r['product'], r['en'], r['native']) for r in csv.DictReader(f)
+                  if r['source'] == 'label' and r['product'] in ('chinese', 'russian', 'japanese')]
+    native_names = {}
+    for product in ('chinese', 'russian', 'japanese'):
+        conn = sqlite3.connect(f'{product}_database.db')
+        native_names[product] = {w for (w,) in conn.execute('SELECT DISTINCT original_writing FROM names') if w}
+        conn.close()
+    rows, seen = [], set()
+    for product, en, native in pairs:
+        native = native.strip()
+        romanized = _romanize(product, native)
+        if not romanized or native in native_names[product] or (product, en.lower(), native) in seen:
+            continue
+        seen.add((product, en.lower(), native))
+        rows.append((product, en, native, romanized))
+    rows.sort()
+    with open(out_file, 'w', encoding='utf-8', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(['product', 'en', 'native', 'romanized'])
+        w.writerows(rows)
 
 
 def create_wikidata_database(product, csv_file, db_file):
@@ -413,15 +478,8 @@ def create_wikidata_database(product, csv_file, db_file):
     plus the supplementary lists from scripts/fetch_extra_names.py."""
     with open(csv_file, encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
-    if product == 'chinese':
-        rows.sort(key=lambda r: _ZH_LABEL_PRIORITY.get(r['native_lang'], 3))
-        best = {}
-        for r in rows:
-            best.setdefault((r['qid'], r['gender']), r)
-        rows = list(best.values())
     rows.sort(key=lambda r: int(r['qid'][1:]))
-    extra = _supplementary_rows(product, rows)
-    rows = extra + rows if product == 'chinese' else rows + extra
+    rows += _supplementary_rows(product, rows)
 
     if os.path.exists(db_file):
         os.remove(db_file)
@@ -445,7 +503,7 @@ def create_wikidata_database(product, csv_file, db_file):
         name, original, enc = parsed
         if not (enc.mp or enc.ipa):
             continue
-        key = original if product in ('russian', 'chinese') else mhelp.strip_accents(name).lower()
+        key = mhelp.strip_accents(name).lower()
         for gender in genders[row['gender']]:
             if (key, gender) in seen:
                 continue
@@ -486,8 +544,13 @@ if __name__ == "__main__":
         create_turkish_database(turkish_csv, turkish_db)
         print("Turkish database created successfully.")
 
-    for product in ('japanese', 'chinese', 'spanish', 'hindi', 'russian'):
+    for product in ('japanese', 'spanish', 'hindi'):
         wikidata_csv = f"datasets/wikidata_{product}.csv"
         if os.path.exists(wikidata_csv):
             create_wikidata_database(product, wikidata_csv, f"{product}_database.db")
             print(f"{product.title()} database created successfully.")
+
+    create_chinese_database()
+    create_russian_database()
+    create_transliterations()
+    print("Chinese and Russian databases and transliterations created successfully.")
