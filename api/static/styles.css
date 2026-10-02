@@ -1014,26 +1014,20 @@ body.korean-theme .advanced-toggle.on {
     opacity: 0.7;
 }
 
-.transliterations {
-    list-style: none;
-    margin: 0 0 1rem;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+.name-item.transliteration {
+    background: #fffbeb;
+    border-color: #d4a017;
 }
 
-.transliteration {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px dashed currentColor;
-    border-radius: 8px;
-    opacity: 0.85;
+.name-item.transliteration:hover {
+    border-color: #b8860b;
 }
 
 .transliteration-label {
     font-size: 0.75rem;
-    opacity: 0.7;
+    font-weight: 600;
+    color: #92400e;
+    background: #fde68a;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
 }

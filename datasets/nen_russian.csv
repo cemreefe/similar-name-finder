@@ -218,7 +218,6 @@ name,gender,popularity,international_forms
 Эрик,male,popular,Eric; Erik
 Алеся,female,popular,
 Стефания,female,popular,Stephanie; Stefania
-Адольф,male,popular,
 Инесса,female,popular,
 Демьян,male,popular,Demyan; Damian
 Агафья,female,popular,Agatha
@@ -253,7 +252,6 @@ name,gender,popularity,international_forms
 Октябрина,female,medium,
 Лада,female,medium,Lada
 Аким,male,medium,Akim; Joachim
-Мия,female,medium,Mia
 Тарас,male,medium,Taras
 Марта,female,medium,Martha; Marta
 Василина,female,medium,Vasilina
@@ -265,7 +263,6 @@ name,gender,popularity,international_forms
 Ася,female,medium,Asya
 Дана,female,medium,Dana
 Капитолина,female,medium,Kapitolina
-Николь,female,medium,Nicole
 Савва,male,medium,Savva; Sabbas
 Лука,male,medium,Luke; Luca; Lucas
 Виталина,female,medium,Vitalina
@@ -273,7 +270,6 @@ name,gender,popularity,international_forms
 Арсентий,male,medium,
 Игнатий,male,medium,
 Адель,male,medium,
-Ариана,female,medium,Ariana; Arianna
 Клим,male,medium,Clement; Clemente
 Нонна,female,medium,Nonna
 Ирма,female,medium,Irma
@@ -284,8 +280,6 @@ name,gender,popularity,international_forms
 Глафира,female,medium,Glafira
 Фрида,female,medium,
 Ратмир,male,medium,Ratmir
-Сабрина,female,medium,
-Альфред,male,medium,
 Прохор,male,medium,Prokhor
 Нинель,female,medium,
 Федора,female,medium,
@@ -296,8 +290,6 @@ name,gender,popularity,international_forms
 Лукерья,female,medium,Glykeria
 Янина,female,medium,
 Домна,female,medium,
-Эрнест,male,medium,
-Арнольд,male,medium,
 Владилен,male,medium,
 Альвина,female,medium,
 Нелля,female,medium,
@@ -308,15 +300,12 @@ name,gender,popularity,international_forms
 Мила,female,medium,Mila
 Муза,female,medium,
 Бронислав,male,medium,
-Даяна,female,medium,
-Эдгар,male,medium,Edgar
 Эрна,female,medium,
 Моисей,male,medium,
 Евангелина,female,medium,Evangeline
 Изабелла,female,medium,
 Герасим,male,medium,
 Абрам,male,medium,
-Элиза,female,medium,Eliza; Elise
 Христина,female,medium,
 Аврора,female,medium,Aurora; Aurore
 Валерьян,male,medium,
@@ -327,9 +316,6 @@ name,gender,popularity,international_forms
 Вольдемар,male,medium,
 Параскева,female,medium,
 Лилиана,female,medium,
-Анита,female,medium,
-Оливия,female,medium,Olivia
-Мартин,male,medium,Martin; Martino
 Давыд,male,medium,
 Станислава,female,medium,
 Авдотья,female,medium,
@@ -344,39 +330,26 @@ name,gender,popularity,international_forms
 Феодосия,female,medium,
 Викентий,male,medium,Vincent; Vincenzo
 Владлена,female,medium,
-Леонард,male,medium,Leonard; Leonardo
-Доминика,female,medium,
 Илларион,male,medium,Hilarion
 Федот,male,medium,
 Яромир,male,medium,Jaromír
-Стелла,female,medium,Stella
-Риана,female,medium,
-Виль,male,medium,
 Лазарь,male,medium,
 Маруся,female,medium,
 Зиновий,male,medium,Zinovy
-Алисия,female,medium,
-Рида,female,medium,
 Радион,male,medium,
 Адель,female,medium,
 Осип,male,medium,Osip
 Ананий,male,medium,
 Берта,female,medium,
-Алана,female,medium,
 Зиновия,female,medium,
 Евдоким,male,medium,Evdokim
 Терентий,male,medium,Terenty; Terence
-Вильгельм,male,medium,
-Рауль,male,medium,
-Алекс,male,medium,
 Лолита,female,medium,
 Олимпиада,female,medium,
-Оскар,male,medium,Oscar; Óscar
 Прокофий,male,medium,
 Август,male,medium,
 Пантелей,male,medium,Panteley
 Ариадна,female,medium,Ariadne; Arianna
-Лора,female,medium,
 Ада,female,medium,
 Лана,female,medium,Lana
 Самуил,male,medium,
@@ -385,12 +358,9 @@ name,gender,popularity,international_forms
 Петра,male,medium,
 Маина,female,medium,
 Аэлита,female,medium,Aelita
-Мелисса,female,medium,Melissa
-Теона,female,medium,
 Калерия,female,medium,Kaleria
 Неонила,female,medium,
 Афина,female,medium,
-Арианна,female,medium,
 Венедикт,male,medium,
 Клавдий,male,medium,
 Аглая,female,rare,Aglaia
@@ -406,19 +376,14 @@ name,gender,popularity,international_forms
 Наум,male,rare,Nahum
 Сарра,female,rare,
 Фома,male,rare,Thomas; Tomás; Tommaso
-Алек,male,rare,
 Мальвина,female,rare,
 Агриппина,female,rare,
 Радима,female,rare,
 Андриан,male,rare,
 Лея,female,rare,Leah; Leia
-Изольда,female,rare,
-Паулина,female,rare,
-Моника,female,rare,
 Никола,male,rare,
 Севастьян,male,rare,Sebastian; Sébastien
 Авенир,male,rare,
-Эрнст,male,rare,
 Евстолия,female,rare,
 Добрыня,male,rare,Dobrynya
 Нил,male,rare,Nil; Neil
@@ -427,7 +392,6 @@ name,gender,popularity,international_forms
 Розалина,female,rare,
 Евстафий,male,rare,
 Светослав,male,rare,
-Эдвард,male,rare,
 Анисим,male,rare,
 Влас,male,rare,Vlas; Blaise
 Анжелина,female,rare,
@@ -435,37 +399,24 @@ name,gender,popularity,international_forms
 Соломон,male,rare,
 Вита,female,rare,
 Дарьяна,female,rare,
-Янис,male,rare,
 Исаак,male,rare,
 Магдалина,female,rare,Magdalena; Madeleine
 Илия,male,rare,
 Бэла,female,rare,
-Джульетта,female,rare,
-Дженнет,female,rare,
 Сидор,male,rare,
-Даниэла,female,rare,
-Лео,male,rare,
-Гарик,male,rare,
 Харитон,male,rare,Khariton
 Еремей,male,rare,Jeremiah; Jeremy
 Милослава,female,rare,
-Георг,male,rare,
 Максимилиан,male,rare,Maximilian; Massimiliano
-Орлан,male,rare,
 Леля,female,rare,
 Аполлинария,female,rare,Apollinaria
-Отто,male,rare,
 Теодор,male,rare,Theodore; Theo
 Мирра,female,rare,Myrrha
-Гертруда,female,rare,
 Елизар,male,rare,Eleazar
 Златослава,female,rare,
 Адриан,male,rare,Adrian; Adrien; Adriano
 Гайса,male,rare,
-Генриетта,female,rare,
-Эвальд,male,rare,
 Мефодий,male,rare,
-Франц,male,rare,
 Агнесса,female,rare,Agnes; Agnès
 Никон,male,rare,
 Улита,female,rare,
@@ -477,24 +428,18 @@ name,gender,popularity,international_forms
 Арон,male,rare,
 Иванна,female,rare,
 Лукьян,male,rare,Lucian; Luciano
-Гарри,male,rare,
 Пантелеймон,male,rare,
 Капитон,male,rare,
-Фая,female,rare,
-Лола,female,rare,
 Маня,female,rare,
-Кристиан,male,rare,Christian; Cristiano
 Фадей,male,rare,Thaddeus; Tadeo
 Милания,female,rare,
 Алексий,male,rare,
 Адриана,female,rare,
-Мишель,female,rare,
 Остап,male,rare,Ostap
 Корней,male,rare,Cornelius; Corneille
 Феня,female,rare,
 Маланья,female,rare,
 Анета,female,rare,
-Вальтер,male,rare,
 Бронислава,female,rare,Bronislava
 Ермолай,male,rare,Ermolay
 Симон,male,rare,
@@ -505,29 +450,20 @@ name,gender,popularity,international_forms
 Феодосий,male,rare,
 Матрона,female,rare,
 Нелла,female,rare,
-Айвар,male,rare,
-Рамир,male,rare,
-Максалина,female,rare,
 Ларион,male,rare,
 Зита,female,rare,
-Рианна,female,rare,
 Михей,male,rare,
-Доминик,male,rare,
 Леонора,female,rare,
 Рахиль,female,rare,
-Людвиг,male,rare,
 Александрина,female,rare,
 Дементий,male,rare,
 Миланья,female,rare,
 Викторина,female,rare,
 Аделаида,female,rare,Adelaide; Adélaïde
-Эмили,female,rare,
 Илария,female,rare,Hilaria; Ilaria
-Эльвин,male,rare,
 Жанетта,female,rare,
 Матрёна,female,rare,Matryona
 Антоний,male,rare,
-Амилия,female,rare,
 Самсон,male,rare,
 Стефанида,female,rare,
 Порфирий,male,rare,Porfiry
@@ -541,24 +477,16 @@ name,gender,popularity,international_forms
 Эрвин,male,rare,
 Маркел,male,rare,
 Радим,male,rare,
-Ричард,male,rare,
 Казимир,male,rare,Casimir; Kazimierz
 Юстина,female,rare,
-Аурика,female,rare,
 Ювеналий,male,rare,
-Лили,female,rare,
-Тереза,female,rare,Teresa; Thérèse
-Дагмара,female,rare,
 Аристарх,male,rare,Aristarkh
-Фина,female,rare,
 Алексия,female,rare,
-Алиана,female,rare,
 Лара,female,rare,
 Афанасия,female,rare,
 Макарий,male,rare,
 Ванда,female,rare,
 Елисавета,female,rare,
-Вилен,male,rare,
 Мираслава,female,rare,
 Леся,female,rare,
 Гера,female,rare,
@@ -573,9 +501,5 @@ name,gender,popularity,international_forms
 Устин,male,rare,Justin
 Феврония,female,rare,
 Ерофей,male,rare,Erofey
-Ванесса,female,rare,
 Нестор,male,rare,Nestor
-Мари,female,rare,
-Геральд,male,rare,
-Грант,male,rare,
 Натан,male,rare,Nathan; Natan

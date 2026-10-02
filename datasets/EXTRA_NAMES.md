@@ -7,7 +7,7 @@ databases with `python preprocessing.py`. Downloaded 2026-09-30.
 | File | Source | Licence | Used for |
 | --- | --- | --- | --- |
 | `cngender_chinese.csv` | [An Open Dataset of Chinese Name-to-Gender Associations](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/UAARYY) (Harvard Dataverse, `CnGender.txt`; [GitHub](https://github.com/tongt1213/Chinese-Gender-dataset)): given names of Chinese residents with male/female counts | CC0 1.0 | Chinese finder. Given names held by >= 500 people (about 8,000). Shown as tone-marked Pinyin + Hanzi and matched by their Pinyin sound; gender is male/female when >= 80% of holders are, otherwise both. |
-| `nen_russian.csv` | [NEN names dataset](https://github.com/mdanina/nen-imena-dataset) (popularity from open Moscow ZAGS newborn statistics, curated by the NEN editorial team) | CC BY 4.0 — © NEN, https://github.com/mdanina/nen-imena-dataset | Russian finder. Only names of the Russian / Orthodox / European name stock (about 580): Arabic, Turkic, Caucasian, Central Asian and Mongolian names are left out; see `RUSSIAN_ORIGINS`, `RUSSIAN_EXTRA` and `RUSSIAN_EXCLUDED` in `scripts/fetch_extra_names.py`. Its `international_forms` (Иван: John; Jean; Juan) rank Иван first for John. |
+| `nen_russian.csv` | [NEN names dataset](https://github.com/mdanina/nen-imena-dataset) (popularity from open Moscow ZAGS newborn statistics, curated by the NEN editorial team) | CC BY 4.0 — © NEN, https://github.com/mdanina/nen-imena-dataset | Russian finder. Only names of the Russian / Orthodox / European name stock (about 500): Arabic, Turkic, Caucasian, Central Asian and Mongolian names and recent Western borrowings (Дженнет, Эмили) are left out; see `RUSSIAN_ORIGINS`, `RUSSIAN_EXTRA` and `RUSSIAN_EXCLUDED` in `scripts/fetch_extra_names.py`. Its `international_forms` (Иван: John; Jean; Juan) rank Иван first for John. |
 | `cedict_chinese.csv` | [CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cc-cedict): entries marked "(name)" plus the most common first-name spelling in "First·Last" person entries | CC BY-SA 4.0 | Chinese spellings of Western names (John → 约翰). If the spelling is itself a Chinese given name (大卫), it ranks first; otherwise it is only shown as a transliteration (see below). |
 | `ine_spanish.csv` | [INE, Estadística de nombres](https://www.ine.es/dyngs/INEbase/es/operacion.htm?c=Estadistica_C&menu=resultados&secc=1254736195498&idp=1254734710990) (`nombres_por_edad_media.xls`): names of residents of Spain held by at least 20 people | CC BY 4.0 — Fuente: Instituto Nacional de Estadística | Spanish finder. Single-word names with frequency >= 500; accents are restored from Wikidata where known. |
 
@@ -18,8 +18,8 @@ CC BY-SA 4.0. The name databases themselves contain no CC-CEDICT data.
 
 Spellings of English names in Chinese, Russian or Japanese script (John → 约翰 / Джон / ジョン) that are not names of
 that language are kept out of the scored results. `preprocessing.create_transliterations` collects them from CC-CEDICT
-and the Wikidata `label` rows of `name_equivalents.csv` into `datasets/transliterations.csv`; a finder shows them in a
-separate "Transliteration, not a native name" box only when the input is exactly the English name or the spelling.
+and the Wikidata `label` rows of `name_equivalents.csv` into `datasets/transliterations.csv`; a finder shows them as gold
+cards labelled "Transliteration, not a native name" above the results only when the input is exactly the English name or the spelling.
 
 ## English → local name equivalents
 

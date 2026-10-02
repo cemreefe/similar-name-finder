@@ -267,7 +267,7 @@ def test_chinese_results_show_pinyin_not_english(client):
 
 @pytest.mark.parametrize("product,native", [
     ("chinese", "约翰"), ("chinese", "雅尔马里"), ("chinese", "迈克尔"),
-    ("russian", "Джон"), ("russian", "Магомед"), ("russian", "Анзор"), ("russian", "Азамат"),
+    ("russian", "Джон"), ("russian", "Магомед"), ("russian", "Анзор"), ("russian", "Азамат"), ("russian", "Дженнет"),
 ])
 def test_foreign_and_regional_names_are_not_in_native_lists(product, native):
     conn = sqlite3.connect(_WORLD_DB_PATHS[product])
@@ -280,14 +280,15 @@ def test_foreign_and_regional_names_are_not_in_native_lists(product, native):
 ])
 def test_transliteration_shown_only_outside_results(client, product, query, native):
     html = client.get(f"/my-name-in-{product}/find/{quote(query, safe='')}").get_data(as_text=True)
-    box = html[html.index('class="transliterations"'):html.index('class="name-list"')]
-    assert native in box
-    assert native not in re.findall(r'original-writing[^>]*>([^<]+)<', html[html.index('class="name-list"'):])
+    cards = re.findall(r'<li class="name-item( transliteration)?">\s*<span class="name">[^<]*<span class="original-writing"[^>]*>([^<]+)<', html)
+    assert ("", native) not in cards
+    assert (" transliteration", native) in cards
+    assert cards[0][0] == " transliteration"
 
 
 def test_no_transliteration_without_exact_match(client):
     html = client.get("/my-name-in-chinese/find/Jalmari").get_data(as_text=True)
-    assert 'class="transliterations"' not in html
+    assert "name-item transliteration" not in html
     assert "雅尔马里" not in html
 
 

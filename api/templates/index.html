@@ -146,14 +146,17 @@
             {% if input_fields.mp or input_fields.ipa %}
             <p class="input-encoding">{{ t.get('input_mp', 'Metaphone') }} <code>{{ input_fields.mp or '—' }}</code>{% if input_fields.ipa and '*' not in input_fields.ipa %} · IPA <code>{{ input_fields.ipa }}</code>{% endif %}</p>
             {% endif %}
-            {% if transliterations %}
-            <ul class="transliterations" aria-label="{{ t.transliteration_label }}">
-                {% for romanized, native in transliterations %}
-                <li class="transliteration"><span class="name">{{ romanized }} <span class="original-writing" dir="auto">{{ native }}</span></span><span class="transliteration-label">{{ t.transliteration_label }}</span></li>
-                {% endfor %}
-            </ul>
-            {% endif %}
             <ul class="name-list">
+                {% for romanized, native in transliterations %}
+                <li class="name-item transliteration">
+                    <span class="name">{{ romanized }} <span class="original-writing" dir="auto">{{ native }}</span></span>
+                    <div class="name-item-meta">
+                        <span class="transliteration-label">{{ t.transliteration_label }}</span>
+                        <button type="button" class="learn-btn" data-name="{{ romanized }}" data-original-writing="{{ native }}" aria-label="{{ t.learn_more }}">{{ t.learn_more }}</button>
+                        <button type="button" class="share-btn" data-input="{{ input_name }}" data-name="{{ romanized }}" aria-label="{{ t.share }}">{{ t.share }}</button>
+                    </div>
+                </li>
+                {% endfor %}
                 {% for name, name_gender, name_mp, name_ipa, ipa_alternatives, score, original_writing in similar_names %}
                 <li class="name-item">
                     <span class="name">{{ name|title }}{% if original_writing %} <span class="original-writing" dir="auto">{{ original_writing }}</span>{% endif %}</span>
