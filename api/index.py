@@ -1348,9 +1348,22 @@ for _product in WORLD_PRODUCTS:
     )
 
 
+# Crawlers that only harvest training data or SEO metrics; they send no visitors.
+_BLOCKED_CRAWLERS = (
+    'GPTBot', 'ClaudeBot', 'anthropic-ai', 'CCBot', 'Bytespider', 'meta-externalagent', 'Google-Extended',
+    'Applebot-Extended', 'Amazonbot', 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot', 'PetalBot', 'DataForSeoBot',
+    'BLEXBot', 'Barkrowler',
+)
+
+# Filtered results are noindex, so crawling them only burns function time.
+_DISALLOWED_PARAMS = ('gender', 'distance_dimension', 'input_type=ipa', 'input_type=mp')
+
+
 @app.route('/robots.txt')
 def robots_txt():
-    body = f"User-agent: *\nAllow: /\n\nSitemap: {_BASE_URL}/sitemap.xml\n"
+    blocked = ''.join(f"User-agent: {bot}\n" for bot in _BLOCKED_CRAWLERS) + "Disallow: /\n\n"
+    filters = ''.join(f"Disallow: /*?*{p}\n" for p in _DISALLOWED_PARAMS)
+    body = f"{blocked}User-agent: *\n{filters}Allow: /\n\nSitemap: {_BASE_URL}/sitemap.xml\n"
     return Response(body, mimetype='text/plain')
 
 
