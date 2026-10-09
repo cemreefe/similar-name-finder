@@ -157,6 +157,16 @@ def test_robots_txt(client):
     assert "Sitemap: https://namefinder.dutl.uk/sitemap.xml" in response.get_data(as_text=True)
 
 
+def test_robots_txt_limits_crawl_budget(client):
+    body = client.get("/robots.txt").get_data(as_text=True)
+    blocked, general = body.split("User-agent: *")
+    assert "User-agent: GPTBot" in blocked and "User-agent: AhrefsBot" in blocked
+    assert "Disallow: /\n" in blocked
+    assert "Disallow: /*?*gender" in general
+    assert "Disallow: /\n" not in general
+    assert "Googlebot" not in body
+
+
 def test_sitemap_xml(client):
     response = client.get("/sitemap.xml")
     assert response.status_code == 200
