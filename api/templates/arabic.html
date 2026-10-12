@@ -124,8 +124,12 @@
             <h2 id="results-heading">{{ t.similar_to.format(name=input_name|capitalize) }}</h2>
             <p class="results-summary">{{ t.results_summary.format(name=input_name, names=(similar_names[:5]|map(attribute=0)|map('title')|join(', '))) }}</p>
             {% if detected_input_types %}
-            {% set detected = namespace(labels=[]) %}{% for it in detected_input_types %}{% set detected.labels = detected.labels + [t.get('input_' + it, it|title)] %}{% endfor %}
-            <p class="detected-input">{{ t.detected_as.format(langs=detected.labels|join(' + ')) }}</p>
+            {% set detected = namespace(labels=[], flags='') %}{% set input_flags = dict(input_type_options) %}{% for it in detected_input_types %}{% set detected.labels = detected.labels + [t.get('input_' + it, it|title)] %}{% set detected.flags = detected.flags + input_flags.get(it, '') %}{% endfor %}
+            <div class="detected-input" role="status">
+                {% if detected.flags %}<span class="detected-input-flag" aria-hidden="true">{{ detected.flags }}</span>{% endif %}
+                <span class="detected-input-text">{{ t.detected_as.format(langs=detected.labels|join(' + ')) }}</span>
+                <button type="button" class="detected-input-change" aria-controls="input_type">{{ t.get('change_input', 'Change') }}</button>
+            </div>
             {% endif %}
             {% if mismatch_cta_links %}
             <p class="script-mismatch">
@@ -282,6 +286,12 @@
         if (learnBtn) {
             e.preventDefault();
             learnAboutName(learnBtn.getAttribute('data-name') || '', learnBtn.getAttribute('data-original-writing'));
+        }
+        if (e.target.closest('.detected-input-change')) {
+            var inputTypeSelect = document.getElementById('input_type');
+            inputTypeSelect.scrollIntoView({block: 'center', behavior: 'smooth'});
+            inputTypeSelect.focus({preventScroll: true});
+            try { inputTypeSelect.showPicker(); } catch (err) {}
         }
         var shareBtn = e.target.closest('.share-btn');
         if (shareBtn) {

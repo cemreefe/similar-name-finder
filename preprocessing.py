@@ -326,16 +326,66 @@ def _hanzi_to_pinyin(text: str) -> str:
     return ' '.join(words)
 
 
+_SOUTH_ASIAN_LANGS = {
+    'Hindi', 'Sanskrit', 'Hindustani', 'Indo-Aryan', 'Urdu', 'Marathi', 'Nepali', 'Bengali', 'Punjabi', 'Gujarati',
+    'Odia', 'Assamese', 'Konkani', 'Kashmiri', 'Sindhi', 'Bhojpuri', 'Maithili', 'Sinhala', 'Malayalam', 'Kannada',
+    'Telugu', 'Tamil',
+}
+# Names that Indian Muslims share with the Arabic/Persian/Turkish world (Ibrahim, Tariq).
+_ISLAMIC_NAME_LANGS = {'Arabic', 'Persian', 'Turkish', 'Azerbaijani', 'Urdu'}
+_IAST_LETTERS = set('āīūṛṝḷṅñṭḍṇśṣḥṃ')
+# Wikidata items with too few bearers to judge that are not Indian names.
+_HINDI_EXCLUDED = {'Reinger', 'Jhoseline', 'Yeily', 'Herodion', 'Thjum', 'Sesan', 'Wing Mui'}
+
+
+def _hindi_label(row: dict) -> str:
+    """Devanagari label without disambiguators ("कनिका (नाम)" -> "कनिका"); '' when it isn't the name itself."""
+    native = re.sub(r'\s*\(.*?\)', '', row['native']).strip()
+    if any(c.isdigit() for c in native) or (' ' in native and ' ' not in row['en'].strip()):
+        return ''
+    return native if _in_script('hindi', re.sub('[ -]', '', native)) else ''
+
+
+def _is_indian_name(row: dict) -> bool:
+    """An Indian given name rather than a Hindi spelling of a foreign one (जाँ-मार्क = Jean-Marc, जॉन = John).
+    Decided by the item's language of name, else by how many of its Wikidata bearers are South Asian."""
+    langs = set(filter(None, row['name_langs'].split('|')))
+    holders, south_asian = int(row['holders'] or 0), int(row['south_asia_holders'] or 0)
+    if langs & _SOUTH_ASIAN_LANGS:
+        return True
+    if langs and not (south_asian >= 10 and south_asian / holders >= 0.2):
+        return langs <= _ISLAMIC_NAME_LANGS and south_asian >= 5
+    if south_asian >= 10 or (holders and south_asian / holders >= 0.08):
+        return True
+    if holders > 3:
+        return False
+    en = row['en'].strip()
+    return en not in _HINDI_EXCLUDED and '-' not in en and all(c.isascii() or c in _IAST_LETTERS for c in en.lower())
+
+
+def _has_kanji(text: str) -> bool:
+    return any('\u4e00' <= c <= '\u9fff' or c == '々' for c in text)
+
+
+def _is_native_wikidata_row(product: str, row: dict) -> bool:
+    """Japanese names written only in kana (ジョン, べん) and Hindi spellings of foreign names are transliterations."""
+    if product == 'japanese':
+        return _has_kanji(row['native'])
+    if product == 'hindi':
+        return _is_indian_name(row)
+    return True
+
+
 def _wikidata_row(product: str, row: dict) -> tuple[str, str | None, NameRepr] | None:
     """Return (display name, original writing, encoding) for one Wikidata given-name row."""
-    native = row['native'].strip()
+    native = _hindi_label(row) if product == 'hindi' else row['native'].strip()
     en = row['en'].strip()
     if product == 'spanish':
         name = native or en
         if not _is_latin_name(name):
             return None
         return name, None, _encode(name, InputType.SPANISH)
-    if not _in_script(product, native):
+    if not (native if product == 'hindi' else _in_script(product, native)):
         return None
     if product == 'japanese':
         name = en if _is_latin_name(en) else (_japanese_to_romaji(native) or '').title()
@@ -453,16 +503,25 @@ def create_transliterations(out_file='datasets/transliterations.csv'):
     with open('datasets/name_equivalents.csv', encoding='utf-8') as f:
         pairs += [(r['product'], r['en'], r['native']) for r in csv.DictReader(f)
                   if r['source'] == 'label' and r['product'] in ('chinese', 'russian', 'japanese')]
-    native_names = {}
-    for product in ('chinese', 'russian', 'japanese'):
+    pairs = [(product, en, native, _romanize(product, native.strip())) for product, en, native in pairs]
+    for product in ('japanese', 'hindi'):
+        with open(f'datasets/wikidata_{product}.csv', encoding='utf-8') as f:
+            for row in csv.DictReader(f):
+                parsed = None if _is_native_wikidata_row(product, row) else _wikidata_row(product, row)
+                if parsed:
+                    pairs.append((product, row['en'].strip() or parsed[0], parsed[1], parsed[0]))
+    native_names, scored_names = {}, {}
+    for product in ('chinese', 'russian', 'japanese', 'hindi'):
         conn = sqlite3.connect(f'{product}_database.db')
         native_names[product] = {w for (w,) in conn.execute('SELECT DISTINCT original_writing FROM names') if w}
+        scored_names[product] = {mhelp.strip_accents(n).lower() for (n,) in conn.execute('SELECT DISTINCT name FROM names')}
         conn.close()
     rows, seen = [], set()
-    for product, en, native in pairs:
+    for product, en, native, romanized in pairs:
         native = native.strip()
-        romanized = _romanize(product, native)
         if not romanized or native in native_names[product] or (product, en.lower(), native) in seen:
+            continue
+        if product in ('japanese', 'hindi') and mhelp.strip_accents(romanized).lower() in scored_names[product]:
             continue
         seen.add((product, en.lower(), native))
         rows.append((product, en, native, romanized))
@@ -497,6 +556,8 @@ def create_wikidata_database(product, csv_file, db_file):
     genders = {'male': ('boy',), 'female': ('girl',), 'unisex': ('boy', 'girl')}
     seen = set()
     for row in tqdm(rows, desc=f"Processing {product} names"):
+        if not _is_native_wikidata_row(product, row):
+            continue
         parsed = _wikidata_row(product, row)
         if parsed is None:
             continue

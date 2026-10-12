@@ -241,7 +241,7 @@ def test_turkish_finder_in_sitemap(client):
 
 
 WORLD_EXPECTATIONS = [
-    ("japanese", "Emma", "えま"),
+    ("japanese", "Midori", "緑"),
     ("chinese", "Michael", "迈克"),
     ("spanish", "Michael", "Miguel"),
     ("hindi", "Rahul", "राहुल"),
@@ -278,6 +278,8 @@ def test_chinese_results_show_pinyin_not_english(client):
 @pytest.mark.parametrize("product,native", [
     ("chinese", "约翰"), ("chinese", "雅尔马里"), ("chinese", "迈克尔"),
     ("russian", "Джон"), ("russian", "Магомед"), ("russian", "Анзор"), ("russian", "Азамат"), ("russian", "Дженнет"),
+    ("hindi", "जाँ-मार्क"), ("hindi", "वोयचेख़"), ("hindi", "आर्नो"), ("hindi", "जॉन"),
+    ("japanese", "ジョン"), ("japanese", "えま"),
 ])
 def test_foreign_and_regional_names_are_not_in_native_lists(product, native):
     conn = sqlite3.connect(_WORLD_DB_PATHS[product])
@@ -287,6 +289,7 @@ def test_foreign_and_regional_names_are_not_in_native_lists(product, native):
 
 @pytest.mark.parametrize("product,query,native", [
     ("chinese", "John", "约翰"), ("chinese", "Michael", "迈克尔"), ("russian", "John", "Джон"), ("russian", "Джон", "Джон"),
+    ("hindi", "Jean-Marc", "जाँ-मार्क"), ("hindi", "John", "जॉन"), ("japanese", "Emma", "エマ"),
 ])
 def test_transliteration_shown_only_outside_results(client, product, query, native):
     html = client.get(f"/my-name-in-{product}/find/{quote(query, safe='')}").get_data(as_text=True)
@@ -366,3 +369,34 @@ def test_world_finders_linked_and_in_sitemap(client):
     for product in WORLD_PRODUCTS:
         assert f"https://namefinder.dutl.uk/my-name-in-{product}/find/John" in locs
     assert "https://namefinder.dutl.uk/my-name-in-chinese/find/Sarah" in locs
+
+
+@pytest.mark.parametrize("product,native", [
+    ("hindi", "प्रिया"), ("hindi", "राहुल"), ("hindi", "अर्जुन"), ("hindi", "अमर"),
+    ("japanese", "緑"), ("japanese", "花子"), ("japanese", "太郎"),
+])
+def test_native_names_stay_in_native_lists(product, native):
+    conn = sqlite3.connect(_WORLD_DB_PATHS[product])
+    assert conn.execute("SELECT COUNT(*) FROM names WHERE original_writing = ?", (native,)).fetchone()[0] > 0
+    conn.close()
+
+
+def test_japanese_list_has_no_kana_only_names():
+    conn = sqlite3.connect(_WORLD_DB_PATHS["japanese"])
+    writings = [w for (w,) in conn.execute("SELECT original_writing FROM names")]
+    conn.close()
+    assert writings and all(any("\u4e00" <= c <= "\u9fff" or c == "々" for c in w) for w in writings)
+
+
+def test_detected_input_card_has_flag_and_change_button(client):
+    html = client.get("/my-name-in-turkish/find/Cemre").get_data(as_text=True)
+    card = re.search(r'<div class="detected-input".*?</div>', html, re.S).group(0)
+    assert "🇹🇷" in card
+    assert 'class="detected-input-change" aria-controls="input_type"' in card
+    assert 'id="input_type"' in html
+    assert "getElementById('input_type')" in html
+
+
+def test_detected_input_change_button_is_localized(client):
+    html = client.get("/my-name-in-turkish/find/Cemre?lang=tr").get_data(as_text=True)
+    assert ">Değiştir</button>" in html

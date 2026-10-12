@@ -63,10 +63,40 @@ def run_query(query: str) -> list[dict]:
     raise RuntimeError('Wikidata query failed repeatedly')
 
 
+# Citizenship of India, Nepal, Pakistan, Bangladesh, Sri Lanka, British Raj.
+SOUTH_ASIA = 'wd:Q668 wd:Q837 wd:Q843 wd:Q902 wd:Q854 wd:Q129286'
+
+
+def hindi_usage(qids: list[str]) -> dict[str, dict]:
+    """Per given-name item: its "language of work or name" (P407) labels, how many people on Wikidata bear it, and
+    how many of those are South Asian citizens. preprocessing uses these to tell Indian names from transliterations."""
+    usage = {q: {'name_langs': '', 'holders': 0, 'south_asia_holders': 0} for q in qids}
+    for i in range(0, len(qids), 100):
+        values = ' '.join('wd:' + q for q in qids[i:i + 100])
+        for b in run_query(f'''
+SELECT ?n (GROUP_CONCAT(DISTINCT ?ll; separator="|") AS ?langs) WHERE {{
+  VALUES ?n {{ {values} }}
+  OPTIONAL {{ ?n wdt:P407 ?l . ?l rdfs:label ?ll FILTER(LANG(?ll) = "en") }}
+}} GROUP BY ?n'''):
+            usage[b['n'].rsplit('/', 1)[-1]]['name_langs'] = b.get('langs', '')
+        for b in run_query(f'''
+SELECT ?n (COUNT(DISTINCT ?p) AS ?c) (COUNT(DISTINCT ?ps) AS ?s) WHERE {{
+  VALUES ?n {{ {values} }}
+  ?p wdt:P735 ?n .
+  OPTIONAL {{ ?p wdt:P27 ?cc . VALUES ?cc {{ {SOUTH_ASIA} }} BIND(?p AS ?ps) }}
+}} GROUP BY ?n'''):
+            q = b['n'].rsplit('/', 1)[-1]
+            usage[q]['holders'], usage[q]['south_asia_holders'] = int(b['c']), int(b['s'])
+    return usage
+
+
 def fetch(product: str) -> None:
     rows = run_query(QUERIES[product])
     out = f'datasets/wikidata_{product}.csv'
     fields = ['qid', 'gender', 'native', 'native_lang', 'ru', 'en']
+    if product == 'hindi':
+        fields += ['name_langs', 'holders', 'south_asia_holders']
+        usage = hindi_usage(sorted({r['n'].rsplit('/', 1)[-1] for r in rows}))
     seen = set()
     with open(out, 'w', encoding='utf-8', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fields)
@@ -80,6 +110,8 @@ def fetch(product: str) -> None:
                 'ru': r.get('ru', ''),
                 'en': r.get('en', ''),
             }
+            if product == 'hindi':
+                record.update(usage[record['qid']])
             key = tuple(record.values())
             if key in seen:
                 continue
