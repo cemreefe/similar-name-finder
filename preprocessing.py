@@ -336,6 +336,8 @@ _ISLAMIC_NAME_LANGS = {'Arabic', 'Persian', 'Turkish', 'Azerbaijani', 'Urdu'}
 _IAST_LETTERS = set('āīūṛṝḷṅñṭḍṇśṣḥṃ')
 # Wikidata items with too few bearers to judge that are not Indian names.
 _HINDI_EXCLUDED = {'Reinger', 'Jhoseline', 'Yeily', 'Herodion', 'Thjum', 'Sesan', 'Wing Mui'}
+# Indian names whose Wikidata bearers are mostly foreign (Adi) or have no citizenship recorded (Amarjit).
+_HINDI_KEPT = {'Adi', 'Amarjit'}
 
 
 def _hindi_label(row: dict) -> str:
@@ -349,11 +351,13 @@ def _hindi_label(row: dict) -> str:
 def _is_indian_name(row: dict) -> bool:
     """An Indian given name rather than a Hindi spelling of a foreign one (जाँ-मार्क = Jean-Marc, जॉन = John).
     Decided by the item's language of name, else by how many of its Wikidata bearers are South Asian."""
-    langs = set(filter(None, row['name_langs'].split('|')))
+    if row['en'].strip() in _HINDI_KEPT:
+        return True
+    langs = set(filter(None, row['name_langs'].split('|'))) - {'multiple languages'}
     holders, south_asian = int(row['holders'] or 0), int(row['south_asia_holders'] or 0)
     if langs & _SOUTH_ASIAN_LANGS:
         return True
-    if langs and not (south_asian >= 10 and south_asian / holders >= 0.2):
+    if langs and not (south_asian >= 10 and south_asian / holders >= 0.15):
         return langs <= _ISLAMIC_NAME_LANGS and south_asian >= 5
     if south_asian >= 10 or (holders and south_asian / holders >= 0.08):
         return True

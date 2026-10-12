@@ -373,6 +373,7 @@ def test_world_finders_linked_and_in_sitemap(client):
 
 @pytest.mark.parametrize("product,native", [
     ("hindi", "प्रिया"), ("hindi", "राहुल"), ("hindi", "अर्जुन"), ("hindi", "अमर"),
+    ("hindi", "आदि"), ("hindi", "अमरजीत"), ("hindi", "कमल"), ("hindi", "पार्थ"),
     ("japanese", "緑"), ("japanese", "花子"), ("japanese", "太郎"),
 ])
 def test_native_names_stay_in_native_lists(product, native):
