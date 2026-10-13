@@ -16,9 +16,10 @@ CC BY-SA 4.0. The name databases themselves contain no CC-CEDICT data.
 
 ## Transliterations
 
-Spellings of English names in Chinese, Russian or Japanese script (John → 约翰 / Джон / ジョン) that are not names of
+Spellings of English names in Chinese, Russian, Japanese or Devanagari script (John → 约翰 / Джон / ジョン / जॉन) that are not names of
 that language are kept out of the scored results. `preprocessing.create_transliterations` collects them from CC-CEDICT
-and the Wikidata `label` rows of `name_equivalents.csv` into `datasets/transliterations.csv`; a finder shows them as gold
+the Wikidata `label` rows of `name_equivalents.csv`, kana-only rows of `wikidata_japanese.csv` and foreign-name rows of
+`wikidata_hindi.csv` into `datasets/transliterations.csv`; a finder shows them as gold
 cards labelled "Transliteration, not a native name" above the results only when the input is exactly the English name or the spelling.
 
 ## English → local name equivalents

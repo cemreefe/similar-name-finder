@@ -10,7 +10,7 @@ with `python preprocessing.py`. Exported 2026-09-29.
 | File | Selection | Native writing |
 | --- | --- | --- |
 | japanese | language of name = Japanese (P407 Q5287) | native label (P1705, ja) |
-| hindi | any given name with a hi label | Hindi label (Devanagari only) |
+| hindi | any given name with a hi label, plus its language of name (P407) and how many of its bearers (P735) are South Asian citizens | Hindi label (Devanagari only) |
 | spanish | language of name = Spanish (P407 Q1321) | – (Spanish label) |
 
 Columns: `qid, gender (male/female/unisex), native, native_lang, ru, en`. Unisex names are stored
@@ -19,3 +19,7 @@ romanized name is not Latin, are skipped by `preprocessing.create_wikidata_datab
 
 Chinese and Russian are no longer built from Wikidata: any given name with a Chinese or Cyrillic label let in foreign
 names (Jalmari → 雅尔马里) and regional ones. See `EXTRA_NAMES.md`.
+
+`preprocessing` scores only native names: Japanese rows written with at least one kanji, and Hindi rows whose language
+of name is South Asian or, failing that, whose Wikidata bearers are largely South Asian. Kana-only Japanese rows and
+Hindi spellings of foreign names (जाँ-मार्क = Jean-Marc) go to `transliterations.csv` instead.
